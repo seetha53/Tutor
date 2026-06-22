@@ -109,7 +109,7 @@ export const teams = [
 
 export function generateOutcomes(
   capability: Capability,
-  context: string,
+  _context: string,
   personas: string[]
 ): { persona: string; outcomes: string[] }[] {
   const templates: Record<string, Record<string, string[]>> = {

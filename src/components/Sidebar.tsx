@@ -1,4 +1,3 @@
-import React from 'react';
 import { LayoutDashboard, Plus, BookOpen, Settings, Users, GraduationCap } from 'lucide-react';
 
 type AdminPage = 'dashboard' | 'create';

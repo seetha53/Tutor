@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, ArrowRight, Search, Plus, Check, Sparkles, Users, Tag, FileText, ChevronDown } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Search, Plus, Check, Sparkles, Tag, ChevronDown } from 'lucide-react';
 import type { Capability, Persona, LearningEvent, WizardStep } from '../../types';
 import { capabilityCatalog, teams, generateOutcomes } from '../../data/mockData';
 

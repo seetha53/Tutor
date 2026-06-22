@@ -1,5 +1,4 @@
-import React from 'react';
-import { Plus, ChevronRight, Users, Calendar, CheckCircle2, Clock, FileEdit, Zap } from 'lucide-react';
+import { Plus, ChevronRight, Users, Calendar, CheckCircle2, FileEdit, Zap } from 'lucide-react';
 import type { LearningEvent } from '../../types';
 
 interface DashboardProps {
@@ -24,7 +23,6 @@ const personaColors: Record<string, string> = {
 export default function Dashboard({ events, onCreateNew, onOpenEvent }: DashboardProps) {
   const active = events.filter(e => e.status === 'Active').length;
   const draft = events.filter(e => e.status === 'Draft').length;
-  const completed = events.filter(e => e.status === 'Completed').length;
   const totalAssigned = events.reduce((s, e) => s + e.assignedCount, 0);
 
   return (

@@ -1,5 +1,4 @@
-import React from 'react';
-import { ArrowLeft, Users, Calendar, CheckCircle2, Tag } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Tag } from 'lucide-react';
 import type { LearningEvent } from '../../types';
 
 interface EventDetailProps {

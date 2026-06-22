@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import type { LearningEvent } from './types';
 import { mockEvents } from './data/mockData';
 import Sidebar from './components/Sidebar';
