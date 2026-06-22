@@ -107,6 +107,12 @@ export const teams = [
   'Clinical Operations', 'Bioanalytical', 'Data Science', 'Cross-functional',
 ];
 
+export const groups = [
+  'Biomarker Science', 'Flow Cytometry', 'In Vivo Studies', 'Translational Research',
+  'GLP Operations', 'Medical Writing', 'Statistics & Programming', 'New Joiners Cohort',
+  'Team Leads', 'Early Discovery',
+];
+
 export function generateOutcomes(
   capability: Capability,
   _context: string,

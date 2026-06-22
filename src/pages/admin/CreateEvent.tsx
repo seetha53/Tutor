@@ -1,11 +1,24 @@
-import React, { useState } from 'react';
-import { ArrowLeft, ArrowRight, Search, Plus, Check, Sparkles, Tag, ChevronDown } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { ArrowLeft, ArrowRight, Search, Plus, Check, Sparkles, Tag, ChevronDown, Paperclip, X, FileText, Link, Upload } from 'lucide-react';
 import type { Capability, Persona, LearningEvent, WizardStep } from '../../types';
-import { capabilityCatalog, teams, generateOutcomes } from '../../data/mockData';
+import { capabilityCatalog, teams, groups, generateOutcomes } from '../../data/mockData';
 
 interface CreateEventProps {
   onCancel: () => void;
   onComplete: (event: Omit<LearningEvent, 'id' | 'createdAt' | 'status' | 'assignedCount'> & { assignedCount?: number }) => void;
+}
+
+interface AttachedFile {
+  id: string;
+  name: string;
+  size: string;
+}
+
+interface ContentItem {
+  id: string;
+  type: 'file' | 'url' | 'text';
+  label: string;
+  value: string;
 }
 
 const STEPS: { id: WizardStep; label: string }[] = [
@@ -30,6 +43,75 @@ const personaDesc: Record<Persona, string> = {
   L4: 'Principal / Lead level',
 };
 
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function FileUploadZone({ onFiles, label, hint }: { onFiles: (files: AttachedFile[]) => void; label: string; hint: string }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [dragging, setDragging] = useState(false);
+
+  const handleFiles = (fileList: FileList) => {
+    const attached: AttachedFile[] = Array.from(fileList).map(f => ({
+      id: `f-${Date.now()}-${Math.random()}`,
+      name: f.name,
+      size: formatBytes(f.size),
+    }));
+    onFiles(attached);
+  };
+
+  return (
+    <div
+      onDragOver={e => { e.preventDefault(); setDragging(true); }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={e => { e.preventDefault(); setDragging(false); handleFiles(e.dataTransfer.files); }}
+      onClick={() => inputRef.current?.click()}
+      className={`border-2 border-dashed rounded-lg px-4 py-5 text-center cursor-pointer transition-all ${
+        dragging ? 'border-blue-500 bg-blue-500/10' : 'border-slate-700 hover:border-slate-500 hover:bg-slate-800/50'
+      }`}
+    >
+      <input ref={inputRef} type="file" multiple className="hidden" onChange={e => e.target.files && handleFiles(e.target.files)} />
+      <Upload size={16} className="text-slate-500 mx-auto mb-2" />
+      <p className="text-slate-300 text-xs font-medium">{label}</p>
+      <p className="text-slate-500 text-xs mt-0.5">{hint}</p>
+    </div>
+  );
+}
+
+function FileChip({ file, onRemove }: { file: AttachedFile; onRemove: () => void }) {
+  return (
+    <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2">
+      <FileText size={13} className="text-blue-400 flex-shrink-0" />
+      <div className="min-w-0 flex-1">
+        <p className="text-slate-200 text-xs font-medium truncate">{file.name}</p>
+        <p className="text-slate-500 text-xs">{file.size}</p>
+      </div>
+      <button onClick={onRemove} className="text-slate-500 hover:text-slate-300 transition-colors flex-shrink-0">
+        <X size={13} />
+      </button>
+    </div>
+  );
+}
+
+function ContentItemCard({ item, onRemove }: { item: ContentItem; onRemove: () => void }) {
+  const icon = item.type === 'file' ? <FileText size={13} className="text-blue-400" /> : <Link size={13} className="text-teal-400" />;
+  return (
+    <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2">
+      <div className="flex-shrink-0">{icon}</div>
+      <div className="min-w-0 flex-1">
+        <p className="text-slate-200 text-xs font-medium truncate">{item.label}</p>
+        {item.type === 'url' && <p className="text-slate-500 text-xs truncate">{item.value}</p>}
+        {item.type === 'file' && <p className="text-slate-500 text-xs">{item.value}</p>}
+      </div>
+      <button onClick={onRemove} className="text-slate-500 hover:text-slate-300 transition-colors flex-shrink-0">
+        <X size={13} />
+      </button>
+    </div>
+  );
+}
+
 export default function CreateEvent({ onCancel, onComplete }: CreateEventProps) {
   const [step, setStep] = useState<WizardStep>('capability');
   const [search, setSearch] = useState('');
@@ -37,11 +119,15 @@ export default function CreateEvent({ onCancel, onComplete }: CreateEventProps) 
   const [showCustomForm, setShowCustomForm] = useState(false);
   const [customCap, setCustomCap] = useState({ name: '', domain: '', description: '' });
   const [context, setContext] = useState('');
+  const [supportingFiles, setSupportingFiles] = useState<AttachedFile[]>([]);
+  const [contentItems, setContentItems] = useState<ContentItem[]>([]);
+  const [urlInput, setUrlInput] = useState('');
+  const [showUrlInput, setShowUrlInput] = useState(false);
   const [selectedPersonas, setSelectedPersonas] = useState<Persona[]>([]);
   const [teamName, setTeamName] = useState('');
+  const [groupName, setGroupName] = useState('');
   const [generating, setGenerating] = useState(false);
   const [generatedOutcomes, setGeneratedOutcomes] = useState<{ persona: string; outcomes: string[] }[]>([]);
-  const [assignedCount, setAssignedCount] = useState('');
 
   const filteredCaps = capabilityCatalog.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -56,7 +142,7 @@ export default function CreateEvent({ onCancel, onComplete }: CreateEventProps) 
     if (step === 'context') return context.trim().length > 20;
     if (step === 'personas') return selectedPersonas.length > 0;
     if (step === 'generate') return generatedOutcomes.length > 0;
-    if (step === 'assign') return !!teamName && !!assignedCount;
+    if (step === 'assign') return !!(teamName || groupName);
     return false;
   };
 
@@ -106,13 +192,34 @@ export default function CreateEvent({ onCancel, onComplete }: CreateEventProps) 
       selectedPersonas,
       teamName,
       outcomes: generatedOutcomes.map(o => ({ persona: o.persona as Persona, outcomes: o.outcomes })),
-      assignedCount: parseInt(assignedCount, 10) || 0,
+      assignedCount: 0,
     });
   };
 
   const togglePersona = (p: Persona) => {
     setSelectedPersonas(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
   };
+
+  const addSupportingFiles = (files: AttachedFile[]) => setSupportingFiles(prev => [...prev, ...files]);
+  const removeSupportingFile = (id: string) => setSupportingFiles(prev => prev.filter(f => f.id !== id));
+
+  const addContentFiles = (files: AttachedFile[]) => {
+    const items: ContentItem[] = files.map(f => ({
+      id: f.id, type: 'file', label: f.name, value: f.size,
+    }));
+    setContentItems(prev => [...prev, ...items]);
+  };
+
+  const addUrlItem = () => {
+    if (!urlInput.trim()) return;
+    const url = urlInput.trim();
+    const label = url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    setContentItems(prev => [...prev, { id: `url-${Date.now()}`, type: 'url', label, value: url }]);
+    setUrlInput('');
+    setShowUrlInput(false);
+  };
+
+  const removeContentItem = (id: string) => setContentItems(prev => prev.filter(i => i.id !== id));
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -251,10 +358,7 @@ export default function CreateEvent({ onCancel, onComplete }: CreateEventProps) 
                   >
                     Add Capability
                   </button>
-                  <button
-                    onClick={() => setShowCustomForm(false)}
-                    className="text-slate-400 hover:text-white text-sm transition-colors"
-                  >
+                  <button onClick={() => setShowCustomForm(false)} className="text-slate-400 hover:text-white text-sm transition-colors">
                     Cancel
                   </button>
                 </div>
@@ -273,33 +377,113 @@ export default function CreateEvent({ onCancel, onComplete }: CreateEventProps) 
 
         {/* STEP 2: Context */}
         {step === 'context' && (
-          <div>
-            <h2 className="text-white font-semibold mb-1">Provide Team Context</h2>
-            <p className="text-slate-400 text-sm mb-5">
-              Tell the system about your team, their specific challenges, and why this capability matters right now.
-              This is used to personalise the learning outcomes.
-            </p>
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-white font-semibold mb-1">Provide Team Context</h2>
+              <p className="text-slate-400 text-sm">
+                Describe your team's situation and why this capability matters now. Attach supporting documents and reference materials to help the AI generate more accurate, relevant outcomes.
+              </p>
+            </div>
 
             {selectedCapability && (
-              <div className="flex items-center gap-2 mb-5 p-3 bg-slate-800 rounded-lg border border-slate-700">
+              <div className="flex items-center gap-2 p-3 bg-slate-800 rounded-lg border border-slate-700">
                 <Tag size={13} className="text-blue-400" />
                 <span className="text-slate-300 text-sm font-medium">{selectedCapability.name}</span>
                 <span className="text-slate-500 text-xs">· {selectedCapability.domain}</span>
               </div>
             )}
 
+            {/* Context text */}
             <div>
               <label className="text-slate-300 text-xs font-semibold uppercase tracking-wide mb-1.5 block">Team Context *</label>
               <textarea
                 placeholder="e.g. The Immunology team is transitioning to a new data repository. Several datasets from recent biomarker studies have been flagged as non-FAIR compliant during audit. We need to build consistent data practices before the Q3 submission deadline..."
                 value={context}
                 onChange={e => setContext(e.target.value)}
-                rows={7}
+                rows={5}
                 className="w-full bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500 transition-colors resize-none"
               />
               <div className="flex justify-between mt-1.5">
                 <p className="text-slate-500 text-xs">Include team roles, current challenges, business triggers, and urgency</p>
                 <span className={`text-xs ${context.length < 20 ? 'text-slate-600' : 'text-slate-400'}`}>{context.length} chars</span>
+              </div>
+            </div>
+
+            {/* Supporting files */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Paperclip size={13} className="text-slate-400" />
+                <label className="text-slate-300 text-xs font-semibold uppercase tracking-wide">Supporting Files</label>
+                <span className="text-slate-600 text-xs">optional</span>
+              </div>
+              <p className="text-slate-500 text-xs mb-3">Attach documents that give the AI background on your team — audit reports, team briefs, previous assessments, org charts.</p>
+              <FileUploadZone
+                onFiles={addSupportingFiles}
+                label="Click or drag files here"
+                hint="PDF, Word, Excel, PowerPoint accepted"
+              />
+              {supportingFiles.length > 0 && (
+                <div className="grid grid-cols-2 gap-2 mt-3">
+                  {supportingFiles.map(f => (
+                    <FileChip key={f.id} file={f} onRemove={() => removeSupportingFile(f.id)} />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Additional content */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <FileText size={13} className="text-slate-400" />
+                <label className="text-slate-300 text-xs font-semibold uppercase tracking-wide">Additional Content</label>
+                <span className="text-slate-600 text-xs">optional</span>
+              </div>
+              <p className="text-slate-500 text-xs mb-3">Add learning resources and references the AI should draw on — SOPs, regulatory guidelines, external references, training materials.</p>
+
+              <div className="space-y-2 mb-3">
+                {contentItems.map(item => (
+                  <ContentItemCard key={item.id} item={item} onRemove={() => removeContentItem(item.id)} />
+                ))}
+              </div>
+
+              <FileUploadZone
+                onFiles={addContentFiles}
+                label="Click or drag files here"
+                hint="PDF, Word, Excel, PowerPoint accepted"
+              />
+
+              <div className="mt-2">
+                {!showUrlInput ? (
+                  <button
+                    onClick={() => setShowUrlInput(true)}
+                    className="flex items-center gap-2 text-xs text-blue-400 hover:text-blue-300 transition-colors mt-2"
+                  >
+                    <Link size={13} />
+                    Add a URL reference
+                  </button>
+                ) : (
+                  <div className="flex gap-2 mt-2">
+                    <input
+                      type="url"
+                      placeholder="https://www.go-fair.org/fair-principles/"
+                      value={urlInput}
+                      onChange={e => setUrlInput(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && addUrlItem()}
+                      autoFocus
+                      className="flex-1 bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors"
+                    />
+                    <button
+                      onClick={addUrlItem}
+                      disabled={!urlInput.trim()}
+                      className="bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-xs font-semibold px-3 py-2 rounded-lg transition-colors"
+                    >
+                      Add
+                    </button>
+                    <button onClick={() => { setShowUrlInput(false); setUrlInput(''); }} className="text-slate-500 hover:text-slate-300 transition-colors px-1">
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -390,57 +574,80 @@ export default function CreateEvent({ onCancel, onComplete }: CreateEventProps) 
         {step === 'assign' && (
           <div>
             <h2 className="text-white font-semibold mb-1">Assign to Team</h2>
-            <p className="text-slate-400 text-sm mb-5">Select the team and confirm the number of learners to assign</p>
+            <p className="text-slate-400 text-sm mb-5">
+              Select a department, a group, or both. The system will automatically map each person to their persona level and deliver the appropriate outcome set.
+            </p>
 
-            <div className="space-y-5">
+            <div className="space-y-4">
+              {/* Department */}
               <div>
-                <label className="text-slate-300 text-xs font-semibold uppercase tracking-wide mb-1.5 block">Team *</label>
+                <label className="text-slate-300 text-xs font-semibold uppercase tracking-wide mb-1.5 block">Department</label>
                 <div className="relative">
                   <select
                     value={teamName}
                     onChange={e => setTeamName(e.target.value)}
                     className="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-lg px-4 py-2.5 focus:outline-none focus:border-blue-500 transition-colors appearance-none pr-10"
                   >
-                    <option value="">Select a team…</option>
+                    <option value="">Select a department…</option>
                     {teams.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                   <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                 </div>
               </div>
 
-              <div>
-                <label className="text-slate-300 text-xs font-semibold uppercase tracking-wide mb-1.5 block">Number of Learners *</label>
-                <input
-                  type="number"
-                  min={1}
-                  placeholder="e.g. 12"
-                  value={assignedCount}
-                  onChange={e => setAssignedCount(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm rounded-lg px-4 py-2.5 focus:outline-none focus:border-blue-500 transition-colors"
-                />
-                <p className="text-slate-500 text-xs mt-1.5">The system will map each learner to their L1–L4 persona and assign the appropriate outcome set</p>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-slate-800" />
+                <span className="text-slate-600 text-xs font-medium">and / or</span>
+                <div className="flex-1 h-px bg-slate-800" />
               </div>
 
-              {/* Summary */}
-              {teamName && assignedCount && (
-                <div className="p-4 bg-slate-800 rounded-lg border border-slate-700 space-y-2">
+              {/* Group */}
+              <div>
+                <label className="text-slate-300 text-xs font-semibold uppercase tracking-wide mb-1.5 block">Group</label>
+                <div className="relative">
+                  <select
+                    value={groupName}
+                    onChange={e => setGroupName(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-lg px-4 py-2.5 focus:outline-none focus:border-blue-500 transition-colors appearance-none pr-10"
+                  >
+                    <option value="">Select a group…</option>
+                    {groups.map(g => <option key={g} value={g}>{g}</option>)}
+                  </select>
+                  <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                </div>
+              </div>
+
+              <p className="text-slate-500 text-xs">Select at least one. Each person's L1–L4 persona will be looked up automatically from their profile.</p>
+
+              {(teamName || groupName) && (
+                <div className="p-4 bg-slate-800 rounded-lg border border-slate-700 space-y-2.5">
                   <p className="text-slate-300 text-xs font-semibold uppercase tracking-wide mb-3">Event Summary</p>
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-500">Capability</span>
                     <span className="text-white font-medium">{selectedCapability?.name}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">Team</span>
-                    <span className="text-white font-medium">{teamName}</span>
-                  </div>
+                  {teamName && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500">Department</span>
+                      <span className="text-white font-medium">{teamName}</span>
+                    </div>
+                  )}
+                  {groupName && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500">Group</span>
+                      <span className="text-white font-medium">{groupName}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-500">Personas</span>
                     <span className="text-white font-medium">{selectedPersonas.join(', ')}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">Learners</span>
-                    <span className="text-white font-medium">{assignedCount}</span>
-                  </div>
+                  {(supportingFiles.length > 0 || contentItems.length > 0) && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500">References</span>
+                      <span className="text-white font-medium">{supportingFiles.length + contentItems.length} attached</span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
