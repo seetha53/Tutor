@@ -1,0 +1,486 @@
+import React, { useState } from 'react';
+import { ArrowLeft, ArrowRight, Search, Plus, Check, Sparkles, Users, Tag, FileText, ChevronDown } from 'lucide-react';
+import type { Capability, Persona, LearningEvent, WizardStep } from '../../types';
+import { capabilityCatalog, teams, generateOutcomes } from '../../data/mockData';
+
+interface CreateEventProps {
+  onCancel: () => void;
+  onComplete: (event: Omit<LearningEvent, 'id' | 'createdAt' | 'status' | 'assignedCount'> & { assignedCount?: number }) => void;
+}
+
+const STEPS: { id: WizardStep; label: string }[] = [
+  { id: 'capability', label: 'Capability' },
+  { id: 'context', label: 'Context' },
+  { id: 'personas', label: 'Personas' },
+  { id: 'generate', label: 'Generate' },
+  { id: 'assign', label: 'Assign' },
+];
+
+const personaColors: Record<Persona, string> = {
+  L1: 'border-violet-500 bg-violet-500/10 text-violet-300',
+  L2: 'border-blue-500 bg-blue-500/10 text-blue-300',
+  L3: 'border-cyan-500 bg-cyan-500/10 text-cyan-300',
+  L4: 'border-amber-500 bg-amber-500/10 text-amber-300',
+};
+
+const personaDesc: Record<Persona, string> = {
+  L1: 'Junior / Associate level',
+  L2: 'Scientist / Analyst level',
+  L3: 'Senior Scientist level',
+  L4: 'Principal / Lead level',
+};
+
+export default function CreateEvent({ onCancel, onComplete }: CreateEventProps) {
+  const [step, setStep] = useState<WizardStep>('capability');
+  const [search, setSearch] = useState('');
+  const [selectedCapability, setSelectedCapability] = useState<Capability | null>(null);
+  const [showCustomForm, setShowCustomForm] = useState(false);
+  const [customCap, setCustomCap] = useState({ name: '', domain: '', description: '' });
+  const [context, setContext] = useState('');
+  const [selectedPersonas, setSelectedPersonas] = useState<Persona[]>([]);
+  const [teamName, setTeamName] = useState('');
+  const [generating, setGenerating] = useState(false);
+  const [generatedOutcomes, setGeneratedOutcomes] = useState<{ persona: string; outcomes: string[] }[]>([]);
+  const [assignedCount, setAssignedCount] = useState('');
+
+  const filteredCaps = capabilityCatalog.filter(c =>
+    c.name.toLowerCase().includes(search.toLowerCase()) ||
+    c.domain.toLowerCase().includes(search.toLowerCase()) ||
+    c.tags.some(t => t.toLowerCase().includes(search.toLowerCase()))
+  );
+
+  const currentStepIndex = STEPS.findIndex(s => s.id === step);
+
+  const canProceed = () => {
+    if (step === 'capability') return !!selectedCapability;
+    if (step === 'context') return context.trim().length > 20;
+    if (step === 'personas') return selectedPersonas.length > 0;
+    if (step === 'generate') return generatedOutcomes.length > 0;
+    if (step === 'assign') return !!teamName && !!assignedCount;
+    return false;
+  };
+
+  const handleNext = () => {
+    const idx = STEPS.findIndex(s => s.id === step);
+    if (step === 'personas') {
+      handleGenerate();
+    } else if (idx < STEPS.length - 1) {
+      setStep(STEPS[idx + 1].id);
+    }
+  };
+
+  const handleBack = () => {
+    const idx = STEPS.findIndex(s => s.id === step);
+    if (idx > 0) setStep(STEPS[idx - 1].id);
+  };
+
+  const handleGenerate = () => {
+    setStep('generate');
+    setGenerating(true);
+    setTimeout(() => {
+      const outcomes = generateOutcomes(selectedCapability!, context, selectedPersonas);
+      setGeneratedOutcomes(outcomes);
+      setGenerating(false);
+    }, 2200);
+  };
+
+  const handleAddCustom = () => {
+    if (!customCap.name || !customCap.domain) return;
+    const cap: Capability = {
+      id: `custom-${Date.now()}`,
+      name: customCap.name,
+      domain: customCap.domain,
+      description: customCap.description,
+      tags: [],
+      isCustom: true,
+    };
+    setSelectedCapability(cap);
+    setShowCustomForm(false);
+  };
+
+  const handleComplete = () => {
+    onComplete({
+      title: `${selectedCapability!.name} — ${teamName}`,
+      capability: selectedCapability!,
+      context,
+      selectedPersonas,
+      teamName,
+      outcomes: generatedOutcomes.map(o => ({ persona: o.persona as Persona, outcomes: o.outcomes })),
+      assignedCount: parseInt(assignedCount, 10) || 0,
+    });
+  };
+
+  const togglePersona = (p: Persona) => {
+    setSelectedPersonas(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-8">
+        <button onClick={onCancel} className="text-slate-400 hover:text-white transition-colors">
+          <ArrowLeft size={18} />
+        </button>
+        <div>
+          <h1 className="text-xl font-bold text-white">New Learning Event</h1>
+          <p className="text-slate-400 text-xs mt-0.5">Create a capability-driven learning experience for your team</p>
+        </div>
+      </div>
+
+      {/* Step indicator */}
+      <div className="flex items-center gap-0 mb-10">
+        {STEPS.map((s, i) => {
+          const done = i < currentStepIndex;
+          const active = s.id === step;
+          return (
+            <React.Fragment key={s.id}>
+              <div className="flex flex-col items-center">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${
+                  done ? 'bg-blue-600 border-blue-600 text-white' :
+                  active ? 'border-blue-500 bg-blue-500/10 text-blue-300' :
+                  'border-slate-700 bg-slate-900 text-slate-500'
+                }`}>
+                  {done ? <Check size={13} /> : i + 1}
+                </div>
+                <span className={`text-xs mt-1.5 font-medium ${active ? 'text-blue-300' : done ? 'text-slate-400' : 'text-slate-600'}`}>{s.label}</span>
+              </div>
+              {i < STEPS.length - 1 && (
+                <div className={`flex-1 h-0.5 mb-5 mx-1 ${i < currentStepIndex ? 'bg-blue-600' : 'bg-slate-800'}`} />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+
+      {/* Step content */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-6">
+
+        {/* STEP 1: Capability */}
+        {step === 'capability' && (
+          <div>
+            <h2 className="text-white font-semibold mb-1">Select a Capability</h2>
+            <p className="text-slate-400 text-sm mb-5">Choose from the Capability Model catalog or add a custom one</p>
+
+            {!showCustomForm ? (
+              <>
+                <div className="relative mb-4">
+                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <input
+                    type="text"
+                    placeholder="Search by name, domain, or tag..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm rounded-lg pl-9 pr-4 py-2.5 focus:outline-none focus:border-blue-500 transition-colors"
+                  />
+                </div>
+
+                <div className="space-y-2 max-h-72 overflow-y-auto pr-1 mb-4">
+                  {filteredCaps.map(cap => (
+                    <button
+                      key={cap.id}
+                      onClick={() => setSelectedCapability(cap)}
+                      className={`w-full text-left p-4 rounded-lg border transition-all ${
+                        selectedCapability?.id === cap.id
+                          ? 'border-blue-500 bg-blue-500/10'
+                          : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-white text-sm font-semibold">{cap.name}</span>
+                            <span className="text-xs text-slate-400 bg-slate-700 px-2 py-0.5 rounded-full">{cap.domain}</span>
+                          </div>
+                          <p className="text-slate-400 text-xs line-clamp-2">{cap.description}</p>
+                        </div>
+                        {selectedCapability?.id === cap.id && (
+                          <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0 ml-3">
+                            <Check size={11} className="text-white" />
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setShowCustomForm(true)}
+                  className="flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  <Plus size={14} />
+                  Add a custom capability
+                </button>
+              </>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-slate-300 text-xs font-semibold uppercase tracking-wide mb-1.5 block">Capability Name *</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Bioinformatics Pipeline Management"
+                    value={customCap.name}
+                    onChange={e => setCustomCap(p => ({ ...p, name: e.target.value }))}
+                    className="w-full bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm rounded-lg px-4 py-2.5 focus:outline-none focus:border-blue-500 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-300 text-xs font-semibold uppercase tracking-wide mb-1.5 block">Domain *</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Computational Biology"
+                    value={customCap.domain}
+                    onChange={e => setCustomCap(p => ({ ...p, domain: e.target.value }))}
+                    className="w-full bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm rounded-lg px-4 py-2.5 focus:outline-none focus:border-blue-500 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-300 text-xs font-semibold uppercase tracking-wide mb-1.5 block">Description</label>
+                  <textarea
+                    placeholder="Briefly describe what this capability covers..."
+                    value={customCap.description}
+                    onChange={e => setCustomCap(p => ({ ...p, description: e.target.value }))}
+                    rows={3}
+                    className="w-full bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm rounded-lg px-4 py-2.5 focus:outline-none focus:border-blue-500 transition-colors resize-none"
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleAddCustom}
+                    disabled={!customCap.name || !customCap.domain}
+                    className="bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                  >
+                    Add Capability
+                  </button>
+                  <button
+                    onClick={() => setShowCustomForm(false)}
+                    className="text-slate-400 hover:text-white text-sm transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {selectedCapability && !showCustomForm && (
+              <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg flex items-center gap-2">
+                <Check size={14} className="text-blue-400 flex-shrink-0" />
+                <span className="text-blue-300 text-sm font-medium">{selectedCapability.name}</span>
+                {selectedCapability.isCustom && <span className="text-xs text-blue-400 bg-blue-500/20 px-1.5 py-0.5 rounded">Custom</span>}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* STEP 2: Context */}
+        {step === 'context' && (
+          <div>
+            <h2 className="text-white font-semibold mb-1">Provide Team Context</h2>
+            <p className="text-slate-400 text-sm mb-5">
+              Tell the system about your team, their specific challenges, and why this capability matters right now.
+              This is used to personalise the learning outcomes.
+            </p>
+
+            {selectedCapability && (
+              <div className="flex items-center gap-2 mb-5 p-3 bg-slate-800 rounded-lg border border-slate-700">
+                <Tag size={13} className="text-blue-400" />
+                <span className="text-slate-300 text-sm font-medium">{selectedCapability.name}</span>
+                <span className="text-slate-500 text-xs">· {selectedCapability.domain}</span>
+              </div>
+            )}
+
+            <div>
+              <label className="text-slate-300 text-xs font-semibold uppercase tracking-wide mb-1.5 block">Team Context *</label>
+              <textarea
+                placeholder="e.g. The Immunology team is transitioning to a new data repository. Several datasets from recent biomarker studies have been flagged as non-FAIR compliant during audit. We need to build consistent data practices before the Q3 submission deadline..."
+                value={context}
+                onChange={e => setContext(e.target.value)}
+                rows={7}
+                className="w-full bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500 transition-colors resize-none"
+              />
+              <div className="flex justify-between mt-1.5">
+                <p className="text-slate-500 text-xs">Include team roles, current challenges, business triggers, and urgency</p>
+                <span className={`text-xs ${context.length < 20 ? 'text-slate-600' : 'text-slate-400'}`}>{context.length} chars</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 3: Personas */}
+        {step === 'personas' && (
+          <div>
+            <h2 className="text-white font-semibold mb-1">Select Applicable Personas</h2>
+            <p className="text-slate-400 text-sm mb-5">
+              Choose which persona levels this learning event applies to. Outcomes will be tailored to each selected level.
+            </p>
+
+            <div className="grid grid-cols-2 gap-3 mb-6">
+              {(['L1', 'L2', 'L3', 'L4'] as Persona[]).map(p => {
+                const selected = selectedPersonas.includes(p);
+                return (
+                  <button
+                    key={p}
+                    onClick={() => togglePersona(p)}
+                    className={`p-4 rounded-xl border-2 text-left transition-all ${
+                      selected ? personaColors[p] : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className={`text-lg font-bold ${selected ? '' : 'text-slate-300'}`}>{p}</span>
+                      {selected && <div className="w-5 h-5 rounded-full bg-current/30 flex items-center justify-center"><Check size={11} /></div>}
+                    </div>
+                    <p className={`text-xs ${selected ? 'opacity-80' : 'text-slate-500'}`}>{personaDesc[p]}</p>
+                  </button>
+                );
+              })}
+            </div>
+
+            {selectedPersonas.length > 0 && (
+              <div className="p-3 bg-slate-800 rounded-lg border border-slate-700">
+                <p className="text-slate-400 text-xs">Outcomes will be generated for: <span className="text-white font-medium">{selectedPersonas.join(', ')}</span></p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* STEP 4: Generate */}
+        {step === 'generate' && (
+          <div>
+            <h2 className="text-white font-semibold mb-1">Learning Outcomes</h2>
+            <p className="text-slate-400 text-sm mb-5">AI-generated outcomes based on your capability, context, and selected personas</p>
+
+            {generating ? (
+              <div className="flex flex-col items-center justify-center py-16">
+                <div className="w-12 h-12 rounded-full border-2 border-blue-500/30 border-t-blue-500 animate-spin mb-4" />
+                <p className="text-slate-300 text-sm font-medium mb-1">Generating learning outcomes…</p>
+                <p className="text-slate-500 text-xs">Applying capability model and team context</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {generatedOutcomes.map(({ persona, outcomes }) => (
+                  <div key={persona} className="border border-slate-800 rounded-lg overflow-hidden">
+                    <div className="px-4 py-2.5 bg-slate-800/50 flex items-center gap-2">
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded border ${
+                        persona === 'L1' ? 'border-violet-500/30 bg-violet-500/20 text-violet-300' :
+                        persona === 'L2' ? 'border-blue-500/30 bg-blue-500/20 text-blue-300' :
+                        persona === 'L3' ? 'border-cyan-500/30 bg-cyan-500/20 text-cyan-300' :
+                        'border-amber-500/30 bg-amber-500/20 text-amber-300'
+                      }`}>{persona}</span>
+                      <span className="text-slate-300 text-sm font-medium">{personaDesc[persona as Persona]}</span>
+                    </div>
+                    <div className="p-4 space-y-2.5">
+                      {outcomes.map((o, i) => (
+                        <div key={i} className="flex items-start gap-2.5">
+                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0" />
+                          <p className="text-slate-300 text-sm">{o}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                <div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                  <Sparkles size={13} className="text-amber-400" />
+                  <p className="text-amber-300 text-xs">These outcomes were generated based on your capability model and context. You can refine them after saving.</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* STEP 5: Assign */}
+        {step === 'assign' && (
+          <div>
+            <h2 className="text-white font-semibold mb-1">Assign to Team</h2>
+            <p className="text-slate-400 text-sm mb-5">Select the team and confirm the number of learners to assign</p>
+
+            <div className="space-y-5">
+              <div>
+                <label className="text-slate-300 text-xs font-semibold uppercase tracking-wide mb-1.5 block">Team *</label>
+                <div className="relative">
+                  <select
+                    value={teamName}
+                    onChange={e => setTeamName(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-lg px-4 py-2.5 focus:outline-none focus:border-blue-500 transition-colors appearance-none pr-10"
+                  >
+                    <option value="">Select a team…</option>
+                    {teams.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                  <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-slate-300 text-xs font-semibold uppercase tracking-wide mb-1.5 block">Number of Learners *</label>
+                <input
+                  type="number"
+                  min={1}
+                  placeholder="e.g. 12"
+                  value={assignedCount}
+                  onChange={e => setAssignedCount(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm rounded-lg px-4 py-2.5 focus:outline-none focus:border-blue-500 transition-colors"
+                />
+                <p className="text-slate-500 text-xs mt-1.5">The system will map each learner to their L1–L4 persona and assign the appropriate outcome set</p>
+              </div>
+
+              {/* Summary */}
+              {teamName && assignedCount && (
+                <div className="p-4 bg-slate-800 rounded-lg border border-slate-700 space-y-2">
+                  <p className="text-slate-300 text-xs font-semibold uppercase tracking-wide mb-3">Event Summary</p>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500">Capability</span>
+                    <span className="text-white font-medium">{selectedCapability?.name}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500">Team</span>
+                    <span className="text-white font-medium">{teamName}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500">Personas</span>
+                    <span className="text-white font-medium">{selectedPersonas.join(', ')}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500">Learners</span>
+                    <span className="text-white font-medium">{assignedCount}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Nav buttons */}
+      <div className="flex justify-between">
+        <button
+          onClick={currentStepIndex === 0 ? onCancel : handleBack}
+          className="flex items-center gap-2 text-slate-400 hover:text-white text-sm font-medium transition-colors px-4 py-2.5"
+        >
+          <ArrowLeft size={15} />
+          {currentStepIndex === 0 ? 'Cancel' : 'Back'}
+        </button>
+
+        {step === 'assign' ? (
+          <button
+            onClick={handleComplete}
+            disabled={!canProceed()}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors shadow-lg shadow-blue-900/30"
+          >
+            <Check size={15} />
+            Create Learning Event
+          </button>
+        ) : (
+          <button
+            onClick={handleNext}
+            disabled={!canProceed() || (step === 'generate' && generating)}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors shadow-lg shadow-blue-900/30"
+          >
+            {step === 'personas' ? (
+              <><Sparkles size={15} /> Generate Outcomes</>
+            ) : (
+              <>Continue <ArrowRight size={15} /></>
+            )}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
