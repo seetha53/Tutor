@@ -60,5 +60,6 @@ export interface LearnerProgress {
   practiceAnswers: (number | null)[];
   summativeAnswers: (number | null)[];
   summativeScore: number;
+  summativeAttempts: number;
   completed: boolean;
 }

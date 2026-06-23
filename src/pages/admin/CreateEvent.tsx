@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { ArrowLeft, ArrowRight, Search, Plus, Check, Sparkles, Tag, ChevronDown, Paperclip, X, FileText, Link, Upload } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Search, Plus, Check, Sparkles, Tag, ChevronDown, Paperclip, X, FileText, Link, Upload, Pencil, Trash2 } from 'lucide-react';
 import type { Capability, Persona, LearningEvent, WizardStep } from '../../types';
 import { capabilityCatalog, teams, groups, generateOutcomes } from '../../data/mockData';
 
@@ -511,7 +511,7 @@ export default function CreateEvent({ onCancel, onComplete }: CreateEventProps) 
         {step === 'generate' && (
           <div>
             <h2 className="text-slate-900 font-semibold mb-1">Learning Outcomes</h2>
-            <p className="text-slate-500 text-sm mb-5">AI-generated outcomes based on your capability, context, and selected personas</p>
+            <p className="text-slate-500 text-sm mb-5">AI-generated outcomes — edit, delete, or add your own before continuing.</p>
 
             {generating ? (
               <div className="flex flex-col items-center justify-center py-16">
@@ -521,7 +521,7 @@ export default function CreateEvent({ onCancel, onComplete }: CreateEventProps) 
               </div>
             ) : (
               <div className="space-y-4">
-                {generatedOutcomes.map(({ persona, outcomes }) => (
+                {generatedOutcomes.map(({ persona, outcomes }, pi) => (
                   <div key={persona} className="border border-slate-200 rounded-lg overflow-hidden">
                     <div className="px-4 py-2.5 bg-slate-50 flex items-center gap-2 border-b border-slate-200">
                       <span className={`text-xs font-bold px-2 py-0.5 rounded border ${
@@ -531,20 +531,53 @@ export default function CreateEvent({ onCancel, onComplete }: CreateEventProps) 
                         'border-amber-200 bg-amber-50 text-amber-700'
                       }`}>{persona}</span>
                       <span className="text-slate-700 text-sm font-medium">{personaDesc[persona as Persona]}</span>
+                      <span className="text-slate-400 text-xs ml-auto">{outcomes.length} outcome{outcomes.length !== 1 ? 's' : ''}</span>
                     </div>
-                    <div className="p-4 space-y-2.5">
-                      {outcomes.map((o, i) => (
-                        <div key={i} className="flex items-start gap-2.5">
-                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0" />
-                          <p className="text-slate-700 text-sm">{o}</p>
+                    <div className="p-4 space-y-2">
+                      {outcomes.map((o, oi) => (
+                        <div key={oi} className="group flex items-start gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2.5 flex-shrink-0" />
+                          <textarea
+                            value={o}
+                            rows={2}
+                            onChange={e => {
+                              const next = generatedOutcomes.map((g, gi) =>
+                                gi === pi ? { ...g, outcomes: g.outcomes.map((x, xi) => xi === oi ? e.target.value : x) } : g
+                              );
+                              setGeneratedOutcomes(next);
+                            }}
+                            className="flex-1 text-slate-700 text-sm bg-white border border-transparent hover:border-slate-200 focus:border-blue-400 focus:outline-none rounded-lg px-2 py-1 resize-none transition-colors leading-relaxed"
+                          />
+                          <button
+                            onClick={() => {
+                              const next = generatedOutcomes.map((g, gi) =>
+                                gi === pi ? { ...g, outcomes: g.outcomes.filter((_, xi) => xi !== oi) } : g
+                              );
+                              setGeneratedOutcomes(next);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-400 transition-all flex-shrink-0 mt-1 p-0.5"
+                          >
+                            <Trash2 size={12} />
+                          </button>
                         </div>
                       ))}
+                      <button
+                        onClick={() => {
+                          const next = generatedOutcomes.map((g, gi) =>
+                            gi === pi ? { ...g, outcomes: [...g.outcomes, ''] } : g
+                          );
+                          setGeneratedOutcomes(next);
+                        }}
+                        className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 transition-colors mt-1 ml-4"
+                      >
+                        <Plus size={12} /> Add outcome
+                      </button>
                     </div>
                   </div>
                 ))}
-                <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <Sparkles size={13} className="text-amber-600" />
-                  <p className="text-amber-700 text-xs">These outcomes were generated based on your capability model and context. You can refine them after saving.</p>
+                <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <Pencil size={13} className="text-blue-600 flex-shrink-0" />
+                  <p className="text-blue-700 text-xs">Click any outcome to edit it inline. Use the trash icon to delete, or add new ones per persona.</p>
                 </div>
               </div>
             )}

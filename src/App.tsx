@@ -13,7 +13,6 @@ import EventDetail from './pages/admin/EventDetail';
 import LearnerSidebar from './components/LearnerSidebar';
 import LearnerDashboard from './pages/learner/LearnerDashboard';
 import LearningEvent from './pages/learner/LearningEvent';
-import TutorChat from './components/TutorChat';
 
 type View = 'admin' | 'learner';
 type AdminPage = 'dashboard' | 'create' | 'detail';
@@ -35,6 +34,7 @@ function makeProgress(eventId: string): LearnerProgress {
     practiceAnswers: [],
     summativeAnswers: Array(summativeQuestions.length).fill(null),
     summativeScore: 0,
+    summativeAttempts: 0,
     completed: false,
   };
 }
@@ -48,12 +48,10 @@ const LEARNER_EVENTS = [
 export default function App() {
   const [view, setView] = useState<View>('admin');
 
-  // ── Admin state ──
   const [adminPage, setAdminPage] = useState<AdminPage>('dashboard');
   const [events, setEvents] = useState<LearningEventType[]>(mockEvents);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
-  // ── Learner state ──
   const [learnerPage, setLearnerPage] = useState<LearnerPage>('dashboard');
   const [activeEventId, setActiveEventId] = useState<string | null>(null);
   const [progressMap, setProgressMap] = useState<Record<string, LearnerProgress>>({});
@@ -83,10 +81,6 @@ export default function App() {
     const resolvedStatus = prog?.completed ? 'completed' : prog && prog.stage !== 'overview' ? 'in-progress' : le.status;
     return { event: ev, status: resolvedStatus, progress: le.progress, dueDate: le.dueDate, completedDate: le.completedDate };
   }).filter(Boolean) as { event: LearningEventType; status: 'assigned' | 'in-progress' | 'completed'; progress?: number; dueDate?: string; completedDate?: string }[];
-
-  const tutorContext = learnerPage === 'event' && activeEvent
-    ? `The learner is currently in the ${activeProgress?.stage ?? 'overview'} stage of FAIR data principles.`
-    : undefined;
 
   return (
     <div className="flex min-h-screen bg-slate-50">
@@ -119,22 +113,17 @@ export default function App() {
             <div className="flex items-center bg-slate-100 border border-slate-200 rounded-lg p-0.5">
               <button
                 onClick={() => setView('admin')}
-                className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                  view === 'admin' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                }`}
+                className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-all ${view === 'admin' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
               >
                 Admin
               </button>
               <button
                 onClick={() => setView('learner')}
-                className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                  view === 'learner' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                }`}
+                className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-all ${view === 'learner' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
               >
                 Learner
               </button>
             </div>
-
             <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 text-xs font-semibold px-3 py-1.5 rounded-full border border-emerald-200">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               AI Active
@@ -155,14 +144,17 @@ export default function App() {
             <>
               {learnerPage === 'dashboard' && <LearnerDashboard events={learnerEventItems} onOpen={handleOpenLearnerEvent} />}
               {learnerPage === 'event' && activeEvent && activeProgress && (
-                <LearningEvent event={activeEvent} progress={activeProgress} onProgress={handleUpdateProgress} onBack={() => setLearnerPage('dashboard')} />
+                <LearningEvent
+                  event={activeEvent}
+                  progress={activeProgress}
+                  onProgress={handleUpdateProgress}
+                  onBack={() => setLearnerPage('dashboard')}
+                />
               )}
             </>
           )}
         </div>
       </main>
-
-      {view === 'learner' && <TutorChat contextHint={tutorContext} />}
     </div>
   );
 }
