@@ -113,48 +113,53 @@ export const groups = [
   'Team Leads', 'Early Discovery',
 ];
 
+/**
+ * Generates learning outcomes using the ABCD method (Audience, Behavior, Context, Degree).
+ * Each outcome follows the pattern: [Audience] will [Behavior verb] [task] [Context] [Degree].
+ * Action verbs are calibrated to persona level — observable, measurable, job-relevant.
+ *
+ * L1: Recognition and execution under guidance (identify, apply, complete, follow)
+ * L2: Independent application and analysis (apply independently, analyse, resolve, guide)
+ * L3: Design, evaluation and team leadership (design, evaluate, define, lead)
+ * L4: Strategy, policy and organisational oversight (set policy, drive, sponsor, advise)
+ */
 export function generateOutcomes(
   capability: Capability,
   _context: string,
   personas: string[]
 ): { persona: string; outcomes: string[] }[] {
-  const templates: Record<string, Record<string, string[]>> = {
-    'L1': {
-      default: [
-        `Describe the core principles of ${capability.name} and their relevance to daily work`,
-        `Apply standard ${capability.domain} procedures correctly in supervised settings`,
-        `Identify when to escalate issues related to ${capability.name} to senior colleagues`,
-        `Complete required documentation for ${capability.name} tasks accurately`,
-      ],
-    },
-    'L2': {
-      default: [
-        `Apply ${capability.name} principles independently across routine and non-routine scenarios`,
-        `Analyse data and outputs for ${capability.name} quality and flag deviations`,
-        `Contribute to team-level ${capability.domain} improvement initiatives`,
-        `Mentor L1 colleagues on ${capability.name} procedures and best practices`,
-      ],
-    },
-    'L3': {
-      default: [
-        `Design and lead ${capability.name} implementation strategies for the team`,
-        `Evaluate ${capability.domain} workflows and recommend process improvements`,
-        `Represent the team in cross-functional ${capability.name} discussions`,
-        `Define quality standards and acceptance criteria for ${capability.name} deliverables`,
-      ],
-    },
-    'L4': {
-      default: [
-        `Set organisational strategy and policy for ${capability.name} across programmes`,
-        `Drive ${capability.domain} innovation and evaluate emerging approaches`,
-        `Sponsor and oversee ${capability.name} capability building initiatives`,
-        `Act as subject matter expert for regulatory, audit, and partnership engagements`,
-      ],
-    },
+  const cap = capability.name;
+  const domain = capability.domain;
+
+  const templates: Record<string, string[]> = {
+    'L1': [
+      `Identify the key principles of ${cap} and explain their relevance to their day-to-day ${domain} tasks`,
+      `Apply ${cap} procedures correctly when completing assigned work, using available tools and guidelines`,
+      `Recognise deviations or quality issues in ${domain} outputs and escalate them to a senior colleague in a timely manner`,
+      `Complete required records and documentation for ${cap} activities accurately and in line with team standards`,
+    ],
+    'L2': [
+      `Apply ${cap} principles independently across both routine and non-routine ${domain} scenarios without supervisor direction`,
+      `Analyse ${domain} outputs for quality, completeness, and compliance, and resolve common issues within their own remit`,
+      `Guide L1 colleagues on correct ${cap} procedures when queries arise during day-to-day work`,
+      `Contribute to team-level ${domain} improvement initiatives by identifying process gaps and proposing practical solutions`,
+    ],
+    'L3': [
+      `Design ${cap} workflows and implementation plans that are fit for purpose for the team's specific scientific or operational context`,
+      `Evaluate existing ${domain} practices against current standards and make evidence-based recommendations for improvement`,
+      `Define quality criteria and acceptance standards for ${cap} deliverables across the team's portfolio of work`,
+      `Lead cross-functional discussions on ${cap}, representing the team's needs and driving alignment with wider organisational goals`,
+    ],
+    'L4': [
+      `Set organisational strategy and policy for ${cap} across multiple programmes, ensuring alignment with business and regulatory priorities`,
+      `Drive ${domain} innovation by evaluating emerging approaches and determining their applicability to the organisation's needs`,
+      `Sponsor ${cap} capability-building initiatives, securing resources and removing barriers to adoption at scale`,
+      `Advise senior stakeholders, regulatory bodies, and external partners as the organisational subject matter expert in ${cap}`,
+    ],
   };
 
   return personas.map((p) => ({
     persona: p,
-    outcomes: templates[p]?.default ?? [],
+    outcomes: templates[p] ?? [],
   }));
 }
