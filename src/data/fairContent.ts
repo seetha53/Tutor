@@ -1,4 +1,4 @@
-import type { MCQuestion } from '../types';
+import type { MCQuestion, MCQOption } from '../types';
 
 export interface FairPrinciple {
   id: 'F' | 'A' | 'I' | 'R';

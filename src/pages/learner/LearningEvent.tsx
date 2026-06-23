@@ -497,10 +497,9 @@ function SummativeStage({ answers, onAnswer, onComplete }: {
 }
 
 // ── Stage: Complete ──────────────────────────────────────────────────────────
-function CompleteStage({ score, total, proficiency, outcomes, onBack }: {
+function CompleteStage({ score, total, outcomes, onBack }: {
   score: number;
   total: number;
-  proficiency: ProficiencyLevel;
   outcomes: string[];
   onBack: () => void;
 }) {
@@ -658,7 +657,7 @@ export default function LearningEvent({ event, progress, onProgress, onBack }: P
         <SummativeStage answers={progress.summativeAnswers} onAnswer={handleSummativeAnswer} onComplete={handleSummativeComplete} />
       )}
       {progress.stage === 'complete' && (
-        <CompleteStage score={progress.summativeScore} total={summativeQuestions.length} proficiency={progress.proficiencyLevel ?? 'Beginner'} outcomes={outcomes} onBack={onBack} />
+        <CompleteStage score={progress.summativeScore} total={summativeQuestions.length} outcomes={outcomes} onBack={onBack} />
       )}
     </div>
   );

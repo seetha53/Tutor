@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { LearningEvent, LearnerProgress } from './types';
+import type { LearningEvent as LearningEventType, LearnerProgress } from './types';
 import { mockEvents } from './data/mockData';
 import { baselineQuestions, summativeQuestions } from './data/fairContent';
 
@@ -52,7 +52,7 @@ export default function App() {
 
   // ── Admin state ──
   const [adminPage, setAdminPage] = useState<AdminPage>('dashboard');
-  const [events, setEvents] = useState<LearningEvent[]>(mockEvents);
+  const [events, setEvents] = useState<LearningEventType[]>(mockEvents);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
   // ── Learner state ──
@@ -62,8 +62,8 @@ export default function App() {
 
   // Admin handlers
   const handleOpenEvent = (id: string) => { setSelectedEventId(id); setAdminPage('detail'); };
-  const handleComplete = (data: Omit<LearningEvent, 'id' | 'createdAt' | 'status' | 'assignedCount'> & { assignedCount?: number }) => {
-    const newEvent: LearningEvent = { ...data, id: `evt-${Date.now()}`, createdAt: new Date().toISOString().slice(0, 10), status: 'Active', assignedCount: data.assignedCount ?? 0 };
+  const handleComplete = (data: Omit<LearningEventType, 'id' | 'createdAt' | 'status' | 'assignedCount'> & { assignedCount?: number }) => {
+    const newEvent: LearningEventType = { ...data, id: `evt-${Date.now()}`, createdAt: new Date().toISOString().slice(0, 10), status: 'Active', assignedCount: data.assignedCount ?? 0 };
     setEvents(prev => [newEvent, ...prev]);
     setAdminPage('dashboard');
   };
@@ -86,7 +86,7 @@ export default function App() {
     const prog = progressMap[le.eventId!];
     const resolvedStatus = prog?.completed ? 'completed' : prog && prog.stage !== 'overview' ? 'in-progress' : le.status;
     return { event: ev, status: resolvedStatus, progress: le.progress, dueDate: le.dueDate, completedDate: le.completedDate, proficiency: le.proficiency };
-  }).filter(Boolean) as { event: LearningEvent; status: 'assigned' | 'in-progress' | 'completed'; progress?: number; dueDate?: string; completedDate?: string; proficiency?: string }[];
+  }).filter(Boolean) as { event: LearningEventType; status: 'assigned' | 'in-progress' | 'completed'; progress?: number; dueDate?: string; completedDate?: string; proficiency?: string }[];
 
   const tutorContext = learnerPage === 'event' && activeEvent
     ? `The learner is currently in the ${activeProgress?.stage ?? 'overview'} stage of FAIR data principles.`

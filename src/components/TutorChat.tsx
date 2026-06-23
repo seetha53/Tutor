@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, ChevronDown } from 'lucide-react';
+import { MessageCircle, Send, ChevronDown } from 'lucide-react';
 import { getTutorResponse } from '../data/fairContent';
 
 interface Message {
