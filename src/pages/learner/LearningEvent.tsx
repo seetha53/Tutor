@@ -568,12 +568,14 @@ function QABlock({ principle }: { principle: FairPrinciple }) {
 // ── Stage: Learning ──────────────────────────────────────────────────────────
 type FormatId = 'read' | 'video' | 'worked' | 'case' | 'qa';
 
-const FORMAT_FOR_MODE: { mode: LearningMode; id: FormatId; label: string; icon: typeof Eye }[] = [
-  { mode: 'Guided Reading',                 id: 'read',   label: 'Read',          icon: BookOpen },
-  { mode: 'Video',                          id: 'video',  label: 'Watch',         icon: Film },
-  { mode: 'Worked Examples',                id: 'worked', label: 'Worked Example', icon: Lightbulb },
-  { mode: 'Case Studies',                   id: 'case',   label: 'Case Study',    icon: FlaskConical },
-  { mode: 'Interactive Q&A with the Tutor', id: 'qa',     label: 'Ask the Tutor', icon: MessagesSquare },
+interface FormatAccent { ring: string; tint: string; iconWrap: string; text: string }
+
+const FORMAT_FOR_MODE: { mode: LearningMode; id: FormatId; label: string; desc: string; icon: typeof Eye; accent: FormatAccent }[] = [
+  { mode: 'Guided Reading',                 id: 'read',   label: 'Read',           desc: 'Concept, lab example & key takeaway', icon: BookOpen,       accent: { ring: 'ring-blue-400 border-blue-300',   tint: 'bg-blue-50',   iconWrap: 'bg-blue-100 text-blue-600',     text: 'text-blue-700' } },
+  { mode: 'Video',                          id: 'video',  label: 'Watch',          desc: 'A short guided video walkthrough',    icon: Film,           accent: { ring: 'ring-rose-400 border-rose-300',   tint: 'bg-rose-50',   iconWrap: 'bg-rose-100 text-rose-600',     text: 'text-rose-700' } },
+  { mode: 'Worked Examples',                id: 'worked', label: 'Worked Example', desc: 'Step by step, problem to fix',        icon: Lightbulb,      accent: { ring: 'ring-amber-400 border-amber-300', tint: 'bg-amber-50',  iconWrap: 'bg-amber-100 text-amber-600',   text: 'text-amber-700' } },
+  { mode: 'Case Studies',                   id: 'case',   label: 'Case Study',     desc: 'Decide what you’d do for real',       icon: FlaskConical,   accent: { ring: 'ring-cyan-400 border-cyan-300',   tint: 'bg-cyan-50',   iconWrap: 'bg-cyan-100 text-cyan-600',     text: 'text-cyan-700' } },
+  { mode: 'Interactive Q&A with the Tutor', id: 'qa',     label: 'Ask the Tutor',  desc: 'Get your questions answered live',    icon: MessagesSquare, accent: { ring: 'ring-teal-400 border-teal-300',   tint: 'bg-teal-50',   iconWrap: 'bg-teal-100 text-teal-600',     text: 'text-teal-700' } },
 ];
 
 function LearningStage({ section, showingFormative, formativeAnswer, onFormativeAnswer, onNext, completedSections, modes }: {
@@ -589,11 +591,21 @@ function LearningStage({ section, showingFormative, formativeAnswer, onFormative
   const color = pc[principle.id];
   const meta = PRINCIPLE_META[section];
 
-  // Which format tabs to show — always include Read, then any selected mode.
+  // Which formats are available — always include Read, then any selected mode.
   const formats = FORMAT_FOR_MODE.filter(f => f.id === 'read' || modes.includes(f.mode));
-  const [active, setActive] = useState<FormatId>('read');
-  // Reset to Read whenever we move to a new principle section.
-  useEffect(() => { setActive('read'); }, [section]);
+  // No default winner — learner chooses how to engage. Single format auto-opens.
+  const [active, setActive] = useState<FormatId | null>(formats.length === 1 ? 'read' : null);
+  const [viewed, setViewed] = useState<Set<FormatId>>(new Set());
+  // Reset when we move to a new principle section.
+  useEffect(() => {
+    setActive(formats.length === 1 ? 'read' : null);
+    setViewed(new Set());
+  }, [section]);
+
+  const open = (id: FormatId) => {
+    setActive(id);
+    setViewed(prev => new Set(prev).add(id));
+  };
 
   const totalMinutes = PRINCIPLE_META.reduce((s, p) => s + p.minutes, 0);
   const doneMinutes = PRINCIPLE_META.slice(0, completedSections).reduce((s, p) => s + p.minutes, 0);
@@ -638,45 +650,70 @@ function LearningStage({ section, showingFormative, formativeAnswer, onFormative
 
       {!showingFormative ? (
         <>
+          {/* Principle header */}
           <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-            {/* Header */}
-            <div className="mb-4">
-              <span className={`inline-block text-xs font-bold px-2 py-0.5 rounded border mb-3 ${color.badge}`}>{principle.id} — {principle.title}</span>
-              <p className="text-slate-900 text-xl font-semibold leading-snug">"{principle.tagline}"</p>
-            </div>
-
-            {/* Sub-topics */}
-            <div className="flex gap-2 flex-wrap mb-5">
+            <span className={`inline-block text-xs font-bold px-2 py-0.5 rounded border mb-3 ${color.badge}`}>{principle.id} — {principle.title}</span>
+            <p className="text-slate-900 text-xl font-semibold leading-snug mb-4">"{principle.tagline}"</p>
+            <div className="flex gap-2 flex-wrap">
               {meta.topics.map(t => (
                 <span key={t} className="text-xs text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200">{t}</span>
               ))}
             </div>
+          </div>
 
-            {/* Format tabs */}
-            {formats.length > 1 && (
-              <div className="flex gap-1.5 flex-wrap mb-5 border-b border-slate-100 pb-4">
+          {/* Equal-weight format chooser — every selected mode is a first-class entry point */}
+          {formats.length > 1 && (
+            <div>
+              <p className="text-slate-700 text-sm font-semibold mb-1">Choose how you’d like to learn this</p>
+              <p className="text-slate-400 text-xs mb-3">Try as many formats as you like — they all cover the same principle.</p>
+              <div className="grid grid-cols-2 gap-2.5">
                 {formats.map(f => {
                   const Icon = f.icon;
                   const on = active === f.id;
+                  const done = viewed.has(f.id);
                   return (
-                    <button key={f.id} onClick={() => setActive(f.id)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                        on ? 'bg-teal-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700'
-                      }`}>
-                      <Icon size={13} /> {f.label}
+                    <button
+                      key={f.id}
+                      onClick={() => open(f.id)}
+                      className={`relative text-left rounded-xl border p-3.5 transition-all ${
+                        on
+                          ? `${f.accent.tint} ${f.accent.ring} ring-2 shadow-sm`
+                          : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-sm'
+                      }`}
+                    >
+                      {done && !on && (
+                        <CheckCircle2 size={15} className="absolute top-2.5 right-2.5 text-teal-500" />
+                      )}
+                      <div className="flex items-center gap-3">
+                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${f.accent.iconWrap}`}>
+                          <Icon size={17} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className={`text-sm font-semibold ${on ? f.accent.text : 'text-slate-800'}`}>{f.label}</p>
+                          <p className="text-slate-400 text-xs leading-snug">{f.desc}</p>
+                        </div>
+                      </div>
                     </button>
                   );
                 })}
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Active format content */}
-            {active === 'read'   && <ReadBlock principle={principle} color={color} />}
-            {active === 'video'  && <VideoBlock principle={principle} color={color} />}
-            {active === 'worked' && <WorkedExampleBlock principle={principle} color={color} />}
-            {active === 'case'   && <CaseStudyBlock principle={principle} />}
-            {active === 'qa'     && <QABlock principle={principle} />}
-          </div>
+          {/* Active format content */}
+          {active ? (
+            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+              {active === 'read'   && <ReadBlock principle={principle} color={color} />}
+              {active === 'video'  && <VideoBlock principle={principle} color={color} />}
+              {active === 'worked' && <WorkedExampleBlock principle={principle} color={color} />}
+              {active === 'case'   && <CaseStudyBlock principle={principle} />}
+              {active === 'qa'     && <QABlock principle={principle} />}
+            </div>
+          ) : (
+            <div className="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-8 text-center">
+              <p className="text-slate-400 text-sm">Pick a format above to start learning <span className="font-semibold text-slate-500">{principle.title}</span>.</p>
+            </div>
+          )}
 
           <button onClick={onNext}
             className="w-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm">
