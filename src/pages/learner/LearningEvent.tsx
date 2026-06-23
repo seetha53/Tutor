@@ -815,8 +815,8 @@ export default function LearningEvent({ event, progress, onProgress, onBack }: P
         </div>
       </div>
 
-      {/* Always-visible chat panel */}
-      <div className="flex-shrink-0 border-t border-slate-200 bg-white" style={{ height: '260px' }}>
+      {/* Always-visible Tutor input bar */}
+      <div className="flex-shrink-0 border-t border-slate-200 bg-white">
         <TutorChat contextHint={tutorContext} />
       </div>
     </div>
