@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   ArrowLeft, ArrowRight, CheckCircle2, Target, BookOpen, Zap, Award,
   RotateCcw, Clock, AlertCircle, Eye, ClipboardList, Settings2,
-  FlaskConical, FileCheck,
+  FlaskConical, FileCheck, Play, Pause, Film, Lightbulb, MessagesSquare,
+  Sparkles, ListChecks,
 } from 'lucide-react';
 import type { LearningEvent as LearningEventType, LearnerProgress, LearningMode, MCQuestion } from '../../types';
-import { fairPrinciples, baselineQuestions, practiceScenario, summativeQuestions } from '../../data/fairContent';
+import { fairPrinciples, baselineQuestions, practiceScenario, summativeQuestions, getTutorResponse, type FairPrinciple } from '../../data/fairContent';
 import TutorChat from '../../components/TutorChat';
 
 interface Props {
@@ -347,18 +348,252 @@ function CustomiseStage({ onConfirm }: {
   );
 }
 
+// ── Learning format: Read ────────────────────────────────────────────────────
+function ReadBlock({ principle, color }: { principle: FairPrinciple; color: typeof pc[string] }) {
+  return (
+    <div className="space-y-5">
+      <p className="text-slate-700 text-sm leading-relaxed">{principle.concept}</p>
+      <div className={`border rounded-lg p-4 ${color.bg}`}>
+        <p className="text-slate-500 text-xs font-semibold uppercase tracking-wide mb-2">In your lab</p>
+        <p className="text-slate-700 text-sm leading-relaxed">{principle.labExample}</p>
+      </div>
+      <div className="flex items-start gap-2 bg-slate-50 border border-slate-200 rounded-lg p-3">
+        <ArrowRight size={13} className="mt-0.5 flex-shrink-0 text-slate-400" />
+        <p className="text-slate-700 text-sm font-medium">{principle.keyTakeaway}</p>
+      </div>
+    </div>
+  );
+}
+
+// ── Learning format: Video (simulated) ───────────────────────────────────────
+function VideoBlock({ principle, color }: { principle: FairPrinciple; color: typeof pc[string] }) {
+  const [playing, setPlaying] = useState(false);
+  const [progress, setProgress] = useState(0); // 0-100
+  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const [mm, ss] = principle.video.duration.split(':').map(Number);
+  const totalSec = mm * 60 + ss;
+  const activeChapter = Math.min(principle.video.chapters.length - 1, Math.floor((progress / 100) * principle.video.chapters.length));
+
+  useEffect(() => {
+    if (playing) {
+      timer.current = setInterval(() => {
+        setProgress(p => {
+          if (p >= 100) { setPlaying(false); return 100; }
+          return p + 100 / (totalSec * 4); // ~ quarter-speed sim so it finishes in a few seconds
+        });
+      }, 100);
+    }
+    return () => { if (timer.current) clearInterval(timer.current); };
+  }, [playing, totalSec]);
+
+  const elapsed = Math.round((progress / 100) * totalSec);
+  const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+
+  return (
+    <div className="space-y-4">
+      {/* Player */}
+      <div className={`relative rounded-lg overflow-hidden border ${color.bg}`}>
+        <div className="aspect-video flex items-center justify-center relative">
+          {/* simulated frame */}
+          <div className="absolute inset-0 flex items-center justify-center opacity-30">
+            <Film size={56} className="text-slate-400" />
+          </div>
+          <div className="absolute top-3 left-3 flex items-center gap-1.5">
+            <span className="bg-black/60 text-white text-xs font-medium px-2 py-0.5 rounded">Simulated · prototype</span>
+          </div>
+          <button
+            onClick={() => setPlaying(p => !p)}
+            className="relative z-10 w-14 h-14 rounded-full bg-white/90 hover:bg-white shadow-lg flex items-center justify-center transition-all"
+          >
+            {playing ? <Pause size={22} className="text-slate-800" /> : <Play size={22} className="text-slate-800 ml-1" />}
+          </button>
+          {/* current chapter label */}
+          <div className="absolute bottom-10 left-3 right-3">
+            <p className="text-slate-700 text-sm font-semibold bg-white/80 inline-block px-2 py-1 rounded">{principle.video.chapters[activeChapter]}</p>
+          </div>
+        </div>
+        {/* scrubber */}
+        <div className="bg-white px-3 py-2.5 border-t border-slate-200">
+          <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden mb-1.5">
+            <div className={`h-full ${color.bar} rounded-full`} style={{ width: `${progress}%`, transition: 'width 0.1s linear' }} />
+          </div>
+          <div className="flex justify-between text-xs text-slate-400">
+            <span>{fmt(elapsed)}</span>
+            <span>{principle.video.duration}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* chapters */}
+      <div>
+        <p className="text-slate-500 text-xs font-semibold uppercase tracking-wide mb-2">Chapters</p>
+        <div className="space-y-1.5">
+          {principle.video.chapters.map((c, i) => (
+            <div key={c} className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border text-sm transition-all ${
+              i === activeChapter && progress > 0 ? `${color.bg} border` : 'border-slate-200 bg-white'
+            }`}>
+              <span className="text-slate-400 text-xs w-4">{i + 1}</span>
+              {i < activeChapter || progress >= 100 ? <CheckCircle2 size={13} className="text-teal-500 flex-shrink-0" /> : <Play size={11} className="text-slate-400 flex-shrink-0" />}
+              <span className={i === activeChapter && progress > 0 ? 'text-slate-800 font-medium' : 'text-slate-600'}>{c}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Learning format: Worked Example (progressive reveal) ─────────────────────
+function WorkedExampleBlock({ principle, color }: { principle: FairPrinciple; color: typeof pc[string] }) {
+  const { workedExample: we } = principle;
+  const [revealed, setRevealed] = useState(0); // number of steps revealed
+  const allRevealed = revealed >= we.steps.length;
+
+  return (
+    <div className="space-y-4">
+      <h4 className="text-slate-900 font-semibold text-sm flex items-center gap-2"><Lightbulb size={14} className="text-amber-500" /> {we.title}</h4>
+
+      {/* Before */}
+      <div className="border border-red-200 bg-red-50 rounded-lg p-3">
+        <p className="text-red-700 text-xs font-semibold uppercase tracking-wide mb-1">Starting point</p>
+        <p className="text-slate-700 text-sm font-mono leading-relaxed">{we.before}</p>
+      </div>
+
+      {/* Steps revealed progressively */}
+      <div className="space-y-2">
+        {we.steps.slice(0, revealed).map((s, i) => (
+          <div key={i} className="flex items-start gap-3 border border-slate-200 bg-white rounded-lg p-3">
+            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${color.badge} border`}>{i + 1}</span>
+            <div>
+              <p className="text-slate-900 text-sm font-medium">{s.label}</p>
+              <p className="text-slate-600 text-sm mt-0.5 leading-relaxed">{s.detail}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {!allRevealed ? (
+        <button onClick={() => setRevealed(r => r + 1)}
+          className="w-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-sm font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2">
+          {revealed === 0 ? 'Walk me through it' : 'Reveal next step'} <ArrowRight size={13} />
+        </button>
+      ) : (
+        <div className="border border-emerald-200 bg-emerald-50 rounded-lg p-3">
+          <p className="text-emerald-700 text-xs font-semibold uppercase tracking-wide mb-1">Result</p>
+          <p className="text-slate-700 text-sm leading-relaxed">{we.after}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Learning format: Case Study ──────────────────────────────────────────────
+function CaseStudyBlock({ principle }: { principle: FairPrinciple }) {
+  const { caseStudy: cs } = principle;
+  const [showExpert, setShowExpert] = useState(false);
+
+  return (
+    <div className="space-y-4">
+      <h4 className="text-slate-900 font-semibold text-sm flex items-center gap-2"><FlaskConical size={14} className="text-cyan-600" /> {cs.title}</h4>
+      <p className="text-slate-700 text-sm leading-relaxed">{cs.narrative}</p>
+
+      <div className="border-l-2 border-teal-400 bg-teal-50 rounded-r-lg p-3">
+        <p className="text-teal-700 text-xs font-semibold uppercase tracking-wide mb-1">Your call</p>
+        <p className="text-slate-800 text-sm font-medium">{cs.question}</p>
+      </div>
+
+      {!showExpert ? (
+        <button onClick={() => setShowExpert(true)}
+          className="w-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-sm font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2">
+          <Eye size={13} /> Reveal the expert view
+        </button>
+      ) : (
+        <div className="border border-slate-200 bg-white rounded-lg p-3">
+          <p className="text-slate-500 text-xs font-semibold uppercase tracking-wide mb-1">Expert view</p>
+          <p className="text-slate-700 text-sm leading-relaxed">{cs.expertView}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Learning format: Interactive Q&A ─────────────────────────────────────────
+function QABlock({ principle }: { principle: FairPrinciple }) {
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+
+  const ask = (q: string) => {
+    if (answers[q]) return;
+    setAnswers(prev => ({ ...prev, [q]: '...' }));
+    setTimeout(() => setAnswers(prev => ({ ...prev, [q]: getTutorResponse(q) })), 500);
+  };
+
+  return (
+    <div className="space-y-3">
+      <p className="text-slate-600 text-sm flex items-center gap-2"><MessagesSquare size={14} className="text-teal-600" /> Tap a question to ask your Tutor — or type your own in the box below.</p>
+      <div className="space-y-2">
+        {principle.qaPrompts.map(q => (
+          <div key={q}>
+            <button
+              onClick={() => ask(q)}
+              disabled={!!answers[q]}
+              className="w-full text-left px-3 py-2.5 rounded-lg border border-slate-200 bg-white hover:border-teal-300 hover:bg-teal-50 disabled:hover:bg-white disabled:hover:border-slate-200 text-slate-700 text-sm transition-all flex items-center gap-2"
+            >
+              <MessagesSquare size={13} className="text-teal-500 flex-shrink-0" />
+              {q}
+            </button>
+            {answers[q] && (
+              <div className="flex gap-2 mt-2 ml-3">
+                <div className="w-5 h-5 rounded-full bg-teal-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Sparkles size={10} className="text-white" />
+                </div>
+                <div className="bg-slate-100 text-slate-700 text-xs leading-relaxed px-3 py-2 rounded-xl rounded-tl-sm">
+                  {answers[q] === '...'
+                    ? <span className="flex gap-1 items-center py-1">
+                        <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      </span>
+                    : answers[q]}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Stage: Learning ──────────────────────────────────────────────────────────
-function LearningStage({ section, showingFormative, formativeAnswer, onFormativeAnswer, onNext, completedSections }: {
+type FormatId = 'read' | 'video' | 'worked' | 'case' | 'qa';
+
+const FORMAT_FOR_MODE: { mode: LearningMode; id: FormatId; label: string; icon: typeof Eye }[] = [
+  { mode: 'Guided Reading',                 id: 'read',   label: 'Read',          icon: BookOpen },
+  { mode: 'Video',                          id: 'video',  label: 'Watch',         icon: Film },
+  { mode: 'Worked Examples',                id: 'worked', label: 'Worked Example', icon: Lightbulb },
+  { mode: 'Case Studies',                   id: 'case',   label: 'Case Study',    icon: FlaskConical },
+  { mode: 'Interactive Q&A with the Tutor', id: 'qa',     label: 'Ask the Tutor', icon: MessagesSquare },
+];
+
+function LearningStage({ section, showingFormative, formativeAnswer, onFormativeAnswer, onNext, completedSections, modes }: {
   section: number;
   showingFormative: boolean;
   formativeAnswer: number | null;
   onFormativeAnswer: (i: number) => void;
   onNext: () => void;
   completedSections: number;
+  modes: LearningMode[];
 }) {
   const principle = fairPrinciples[section];
   const color = pc[principle.id];
   const meta = PRINCIPLE_META[section];
+
+  // Which format tabs to show — always include Read, then any selected mode.
+  const formats = FORMAT_FOR_MODE.filter(f => f.id === 'read' || modes.includes(f.mode));
+  const [active, setActive] = useState<FormatId>('read');
+  // Reset to Read whenever we move to a new principle section.
+  useEffect(() => { setActive('read'); }, [section]);
 
   const totalMinutes = PRINCIPLE_META.reduce((s, p) => s + p.minutes, 0);
   const doneMinutes = PRINCIPLE_META.slice(0, completedSections).reduce((s, p) => s + p.minutes, 0);
@@ -394,7 +629,6 @@ function LearningStage({ section, showingFormative, formativeAnswer, onFormative
             );
           })}
         </div>
-        {/* Overall progress bar */}
         <div className="mt-3">
           <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
             <div className="h-full bg-teal-500 rounded-full transition-all" style={{ width: `${(completedSections / PRINCIPLE_META.length) * 100}%` }} />
@@ -404,35 +638,49 @@ function LearningStage({ section, showingFormative, formativeAnswer, onFormative
 
       {!showingFormative ? (
         <>
-          <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-5 shadow-sm">
-            <div>
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+            {/* Header */}
+            <div className="mb-4">
               <span className={`inline-block text-xs font-bold px-2 py-0.5 rounded border mb-3 ${color.badge}`}>{principle.id} — {principle.title}</span>
               <p className="text-slate-900 text-xl font-semibold leading-snug">"{principle.tagline}"</p>
             </div>
 
             {/* Sub-topics */}
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2 flex-wrap mb-5">
               {meta.topics.map(t => (
                 <span key={t} className="text-xs text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200">{t}</span>
               ))}
             </div>
 
-            <p className="text-slate-700 text-sm leading-relaxed">{principle.concept}</p>
+            {/* Format tabs */}
+            {formats.length > 1 && (
+              <div className="flex gap-1.5 flex-wrap mb-5 border-b border-slate-100 pb-4">
+                {formats.map(f => {
+                  const Icon = f.icon;
+                  const on = active === f.id;
+                  return (
+                    <button key={f.id} onClick={() => setActive(f.id)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                        on ? 'bg-teal-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700'
+                      }`}>
+                      <Icon size={13} /> {f.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
-            <div className={`border rounded-lg p-4 ${color.bg}`}>
-              <p className="text-slate-500 text-xs font-semibold uppercase tracking-wide mb-2">In your lab</p>
-              <p className="text-slate-700 text-sm leading-relaxed">{principle.labExample}</p>
-            </div>
-
-            <div className="flex items-start gap-2 bg-slate-50 border border-slate-200 rounded-lg p-3">
-              <ArrowRight size={13} className="mt-0.5 flex-shrink-0 text-slate-400" />
-              <p className="text-slate-700 text-sm font-medium">{principle.keyTakeaway}</p>
-            </div>
+            {/* Active format content */}
+            {active === 'read'   && <ReadBlock principle={principle} color={color} />}
+            {active === 'video'  && <VideoBlock principle={principle} color={color} />}
+            {active === 'worked' && <WorkedExampleBlock principle={principle} color={color} />}
+            {active === 'case'   && <CaseStudyBlock principle={principle} />}
+            {active === 'qa'     && <QABlock principle={principle} />}
           </div>
 
           <button onClick={onNext}
             className="w-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm">
-            Check my understanding <ArrowRight size={14} />
+            <ListChecks size={14} /> Check my understanding <ArrowRight size={14} />
           </button>
         </>
       ) : (
@@ -788,7 +1036,8 @@ export default function LearningEvent({ event, progress, onProgress, onBack }: P
               formativeAnswer={progress.formativeAnswers[progress.currentSection] ?? null}
               onFormativeAnswer={handleFormativeAnswer}
               onNext={handleLearningNext}
-              completedSections={progress.currentSection + (progress.showingFormative && progress.formativeAnswers[progress.currentSection] !== undefined ? 0 : 0)}
+              completedSections={progress.currentSection}
+              modes={progress.learningModes}
             />
           )}
           {progress.stage === 'practice' && (

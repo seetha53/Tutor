@@ -1,5 +1,10 @@
 import type { MCQuestion, MCQOption } from '../types';
 
+export interface WorkedStep {
+  label: string;
+  detail: string;
+}
+
 export interface FairPrinciple {
   id: 'F' | 'A' | 'I' | 'R';
   title: string;
@@ -8,6 +13,10 @@ export interface FairPrinciple {
   labExample: string;
   keyTakeaway: string;
   formativeQuestion: MCQuestion;
+  video: { duration: string; chapters: string[] };
+  workedExample: { title: string; before: string; steps: WorkedStep[]; after: string };
+  caseStudy: { title: string; narrative: string; question: string; expertView: string };
+  qaPrompts: string[];
 }
 
 export const fairPrinciples: FairPrinciple[] = [
@@ -18,6 +27,27 @@ export const fairPrinciples: FairPrinciple[] = [
     concept: 'Data is findable when it has a unique persistent identifier (like a DOI or accession number), is described by rich metadata, and is registered in a searchable resource. The identifier is the stable address — it still works even if the underlying file moves servers.',
     labExample: 'You run a cytokine multiplex assay on PBMC samples from 20 donors. You store the results in your ELN — but without a project code, assay type, or timepoint metadata. Six months later, a colleague doing a meta-analysis cannot locate your dataset. The data exists but is effectively invisible.',
     keyTakeaway: 'Findability = persistent identifier + rich metadata + searchable registration.',
+    video: {
+      duration: '4:30',
+      chapters: ['What makes data findable', 'Persistent identifiers explained', 'Writing rich metadata', 'Registering in a searchable repository'],
+    },
+    workedExample: {
+      title: 'Turning an invisible dataset findable',
+      before: 'cytokine_results_final_v3.xlsx — saved in a shared ELN folder, no identifier, no description.',
+      steps: [
+        { label: 'Mint an identifier', detail: 'Submit to the institutional repository, which issues a DOI: 10.5281/zenodo.84021.' },
+        { label: 'Add rich metadata', detail: 'Record assay = Luminex multiplex, analytes = 12 cytokines, species = human, sample = PBMC, timepoints = 0/24/48h.' },
+        { label: 'Register it', detail: 'Publish the record so the metadata is indexed and searchable by anyone.' },
+      ],
+      after: 'A colleague searching "human PBMC cytokine multiplex" now finds your dataset by its DOI in seconds.',
+    },
+    caseStudy: {
+      title: 'The meta-analysis that couldn\'t find you',
+      narrative: 'A consortium is pooling cytokine datasets across five labs. Yours is the most complete — but it lives in an ELN folder named "JuneRun_final", with no repository record.',
+      question: 'The consortium lead emails asking for "any FAIR-compliant cytokine data". What is the first thing you fix?',
+      expertView: 'Start with findability: register the dataset and assign a DOI, then describe it with metadata. Without that, none of your downstream effort is even discoverable.',
+    },
+    qaPrompts: ['What\'s the difference between a DOI and a filename?', 'How much metadata is "enough"?', 'Who issues persistent identifiers?'],
     formativeQuestion: {
       id: 'f-formative',
       stem: 'A colleague assigns a DOI to their flow cytometry dataset but fills in no metadata fields. What is the most significant gap?',
@@ -37,6 +67,27 @@ export const fairPrinciples: FairPrinciple[] = [
     concept: 'Once someone finds your data, they should be able to retrieve it using a standard, open protocol — ideally without needing special tools or permissions. Importantly, even if the data itself is restricted (e.g. patient data under a data sharing agreement), the metadata describing it should always remain openly accessible so others know the data exists and how to request access.',
     labExample: 'Your biomarker study dataset is listed in a public repository, but when the project ends, the institutional server hosting the files is decommissioned. The metadata is still visible — people can see the dataset exists and who to contact — but the files are no longer retrievable. The metadata staying accessible is what makes this recoverable.',
     keyTakeaway: 'Accessible = open retrieval protocol + metadata stays public even when data is restricted.',
+    video: {
+      duration: '3:50',
+      chapters: ['Found vs reachable', 'Open retrieval protocols', 'Authentication for restricted data', 'Why metadata must persist'],
+    },
+    workedExample: {
+      title: 'Keeping restricted data accessible',
+      before: 'A donor-level biomarker dataset sits on a project server that will be decommissioned at project end.',
+      steps: [
+        { label: 'Separate metadata from data', detail: 'Publish the metadata record openly in the repository, even though the data itself stays controlled.' },
+        { label: 'Define the access route', detail: 'State that data is available under a Data Access Agreement, with a named contact and a request process.' },
+        { label: 'Use a durable host', detail: 'Move files to a managed repository with long-term preservation, not a project server.' },
+      ],
+      after: 'Even after the server is gone, others can see the dataset exists and follow a clear path to request it.',
+    },
+    caseStudy: {
+      title: 'The link that died',
+      narrative: 'Eight months after publication, a reviewer reports that your dataset\'s download link returns a 404. The project that hosted it ended and the server was retired.',
+      question: 'The data is gone from the old server. What should have been in place so this never happened?',
+      expertView: 'Long-term accessibility needs durable infrastructure and persistent metadata. The data should have lived in a preservation-grade repository, with metadata that stays public regardless of the data\'s status.',
+    },
+    qaPrompts: ['Does "accessible" mean open to everyone?', 'What stays public when data is restricted?', 'What is an open retrieval protocol?'],
     formativeQuestion: {
       id: 'a-formative',
       stem: 'A dataset contains sensitive patient information and is stored behind access controls. According to FAIR principles, what should still be publicly available?',
@@ -56,6 +107,27 @@ export const fairPrinciples: FairPrinciple[] = [
     concept: 'Interoperability means your data and metadata use shared vocabularies, ontologies, and formats so that other systems and researchers can interpret them without needing to ask you for a translation. Using lab-specific abbreviations, proprietary file formats, or undefined terms breaks interoperability — even if the data is perfectly well-organised internally.',
     labExample: 'Your immunoassay results use "T0", "T24", "T48" for timepoints — clear to your team, but undefined to anyone outside. A bioinformatics pipeline attempting to integrate your data with another lab\'s dataset cannot reconcile these without manual intervention. Using a shared ontology term like "hours post-stimulation" with a numeric value removes this ambiguity.',
     keyTakeaway: 'Interoperable = shared vocabulary + open formats + qualified references to other data.',
+    video: {
+      duration: '4:10',
+      chapters: ['The translation problem', 'Shared vocabularies & ontologies', 'Open vs proprietary formats', 'Qualified links between datasets'],
+    },
+    workedExample: {
+      title: 'From lab shorthand to shared vocabulary',
+      before: 'Columns: T0, T24, T48 · cell types: "Mac", "Tc", "Bc" · file format: .xyz (proprietary).',
+      steps: [
+        { label: 'Replace ambiguous terms', detail: 'Map T0/T24/T48 to "hours_post_stimulation" = 0, 24, 48 with unit ontology UO:0000032.' },
+        { label: 'Use standard cell-type terms', detail: 'Map "Mac" → macrophage (CL:0000235), "Tc" → T cell (CL:0000084), "Bc" → B cell (CL:0000236).' },
+        { label: 'Convert the format', detail: 'Export from .xyz to CSV so any tool can read it without proprietary software.' },
+      ],
+      after: 'A bioinformatics pipeline can now ingest and integrate your data automatically — no translation key required.',
+    },
+    caseStudy: {
+      title: 'Two labs, one analysis, no common language',
+      narrative: 'Your data and a partner lab\'s data should combine into one model. Their pipeline rejects yours overnight: it can\'t map your abbreviations or open your file format.',
+      question: 'The integration fails and you\'re not on the call. What changes let the pipeline read your data unaided?',
+      expertView: 'Interoperability means machines interpret your data without you. Adopt shared ontologies for terms and an open format for the file — then integration becomes automatic.',
+    },
+    qaPrompts: ['What is an ontology, in plain terms?', 'Why is CSV better than a proprietary format?', 'What is a "qualified reference"?'],
     formativeQuestion: {
       id: 'i-formative',
       stem: 'A scientist exports assay data in a proprietary software format and uses lab-specific abbreviations for all cell types. Which FAIR principle is most at risk, and why?',
@@ -75,6 +147,27 @@ export const fairPrinciples: FairPrinciple[] = [
     concept: 'Reusability is the ultimate goal of the other three principles. Data is reusable when it has a clear usage licence, detailed provenance (who generated it, how, and when), thorough methodology documentation, and meets community standards for the domain. Without these, even a well-described, accessible dataset may sit unused because no one can assess whether it\'s appropriate to build on.',
     labExample: 'You share an ELISA dataset publicly. It has a DOI, good metadata, and an open format. But there\'s no licence, no information about antibody lots, no passage number for the cells, and no note that one donor sample was an outlier that was excluded. A researcher trying to include your data in a meta-analysis cannot safely do so — too many unknowns.',
     keyTakeaway: 'Reusable = clear licence + rich provenance + documented methodology + community standards.',
+    video: {
+      duration: '4:40',
+      chapters: ['Why reuse is the goal', 'Provenance and methodology', 'Licences explained', 'Meeting community standards'],
+    },
+    workedExample: {
+      title: 'Making an ELISA dataset safe to reuse',
+      before: 'Public ELISA dataset: DOI, good metadata, CSV format — but no licence, no reagent lots, no exclusion notes.',
+      steps: [
+        { label: 'Attach a licence', detail: 'Apply CC BY 4.0 so others know they may reuse it with attribution.' },
+        { label: 'Document provenance', detail: 'Record antibody lot numbers, cell passage number, instrument, and calibration date.' },
+        { label: 'Flag exclusions', detail: 'Note that donor 12 was an outlier excluded from analysis, with the reason why.' },
+      ],
+      after: 'A meta-analysis team can now confirm they\'re allowed to use the data and trust its quality.',
+    },
+    caseStudy: {
+      title: 'Technically perfect, practically unusable',
+      narrative: 'Your dataset ticks F, A, and I — but a meta-analysis team passes it over. It has no licence and no provenance, so they can\'t confirm rights or reliability.',
+      question: 'The data is findable, accessible and interoperable. Why is it still sitting unused?',
+      expertView: 'Reusability is the payoff of the other three. Without a licence and provenance, even flawless data is legally and scientifically untrustworthy to build on.',
+    },
+    qaPrompts: ['What should a good licence cover?', 'What counts as provenance?', 'Why isn\'t a DOI enough for reuse?'],
     formativeQuestion: {
       id: 'r-formative',
       stem: 'A researcher wants to include your immunoassay dataset in a multi-centre meta-analysis. Your dataset has a DOI and detailed metadata, but no licence and no information about reagent lots or instrument calibration. What is the most significant barrier to reuse?',
