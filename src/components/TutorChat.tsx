@@ -8,22 +8,11 @@ interface Message {
   text: string;
 }
 
-interface TutorChatProps {
-  contextHint?: string;
-}
-
-export default function TutorChat({ contextHint }: TutorChatProps) {
+export default function TutorChat({ contextHint }: { contextHint?: string }) {
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'init',
-      role: 'tutor',
-      text: 'Hi! Ask me anything about FAIR data principles at any point — a quick question, a concept you want explained differently, or just "why does this matter?"',
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [typing, setTyping] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -44,17 +33,11 @@ export default function TutorChat({ contextHint }: TutorChatProps) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-slate-200 flex-shrink-0">
-        <div className="w-6 h-6 rounded-full bg-teal-600 flex items-center justify-center flex-shrink-0">
-          <GraduationCap size={12} className="text-white" />
-        </div>
-        <span className="text-slate-700 text-sm font-semibold">Ask your Tutor</span>
-        <div className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse ml-1" />
-      </div>
-
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-0">
+        {messages.length === 0 && (
+          <p className="text-slate-300 text-xs text-center pt-2">Ask your Tutor anything about the content</p>
+        )}
         {messages.map(msg => (
           <div key={msg.id} className={`flex gap-2 ${msg.role === 'learner' ? 'flex-row-reverse' : ''}`}>
             {msg.role === 'tutor' && (
@@ -89,12 +72,11 @@ export default function TutorChat({ contextHint }: TutorChatProps) {
       {/* Input */}
       <div className="flex gap-2 px-4 py-3 border-t border-slate-200 flex-shrink-0">
         <input
-          ref={inputRef}
           type="text"
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && send()}
-          placeholder="Ask about FAIR, the assessments, or anything on your mind…"
+          placeholder="Ask your Tutor…"
           className="flex-1 bg-white border border-slate-300 text-slate-900 placeholder-slate-400 text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-teal-500 transition-colors"
         />
         <button

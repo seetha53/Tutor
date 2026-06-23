@@ -1,6 +1,6 @@
 export type Persona = 'L1' | 'L2' | 'L3' | 'L4';
 export type EventStatus = 'Draft' | 'Active' | 'Completed';
-export type LearningMode = 'Guided Reading' | 'Case Studies' | 'Worked Examples' | 'Interactive Q&A' | 'Knowledge Checks';
+export type LearningMode = 'Guided Reading' | 'Case Studies' | 'Worked Examples' | 'Interactive Q&A with the Tutor' | 'Video' | 'Quizzes / Knowledge Checks';
 export type LearnerStage = 'overview' | 'baseline' | 'customise' | 'learning' | 'practice' | 'summative' | 'complete';
 
 export interface Capability {

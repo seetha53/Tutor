@@ -15,7 +15,7 @@ interface Props {
   onBack: () => void;
 }
 
-const MODES: LearningMode[] = ['Guided Reading', 'Case Studies', 'Worked Examples', 'Interactive Q&A', 'Knowledge Checks'];
+const MODES: LearningMode[] = ['Guided Reading', 'Case Studies', 'Worked Examples', 'Interactive Q&A with the Tutor', 'Video', 'Quizzes / Knowledge Checks'];
 const SESSION_LENGTHS = ['Under 15 minutes', '15–30 minutes', '30–60 minutes', '1 hour or more'];
 const SESSION_COUNTS = ['1–2 sessions', '3–4 sessions', '5–6 sessions', '7 or more'];
 const PASS_THRESHOLD = 0.75; // 75%
