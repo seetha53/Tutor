@@ -27,8 +27,6 @@ function makeProgress(eventId: string): LearnerProgress {
     showingFormative: false,
     baselineAnswers: Array(baselineQuestions.length).fill(null),
     baselineScore: 0,
-    proficiencyLevel: null,
-    targetLevel: null,
     learningModes: [],
     sessionLength: '',
     sessionsAvailable: '',
@@ -44,7 +42,7 @@ function makeProgress(eventId: string): LearnerProgress {
 const LEARNER_EVENTS = [
   { eventId: mockEvents[0]?.id, status: 'in-progress' as const, progress: 35, dueDate: '15 Jul 2026' },
   { eventId: mockEvents[1]?.id, status: 'assigned' as const, dueDate: '30 Jul 2026' },
-  { eventId: mockEvents[2]?.id, status: 'completed' as const, completedDate: '10 Jun 2026', proficiency: 'Competent' },
+  { eventId: mockEvents[2]?.id, status: 'completed' as const, completedDate: '10 Jun 2026' },
 ].filter(e => e.eventId);
 
 export default function App() {
@@ -60,7 +58,6 @@ export default function App() {
   const [activeEventId, setActiveEventId] = useState<string | null>(null);
   const [progressMap, setProgressMap] = useState<Record<string, LearnerProgress>>({});
 
-  // Admin handlers
   const handleOpenEvent = (id: string) => { setSelectedEventId(id); setAdminPage('detail'); };
   const handleComplete = (data: Omit<LearningEventType, 'id' | 'createdAt' | 'status' | 'assignedCount'> & { assignedCount?: number }) => {
     const newEvent: LearningEventType = { ...data, id: `evt-${Date.now()}`, createdAt: new Date().toISOString().slice(0, 10), status: 'Active', assignedCount: data.assignedCount ?? 0 };
@@ -68,7 +65,6 @@ export default function App() {
     setAdminPage('dashboard');
   };
 
-  // Learner handlers
   const handleOpenLearnerEvent = (id: string) => {
     setActiveEventId(id);
     if (!progressMap[id]) setProgressMap(prev => ({ ...prev, [id]: makeProgress(id) }));
@@ -85,16 +81,15 @@ export default function App() {
     if (!ev) return null;
     const prog = progressMap[le.eventId!];
     const resolvedStatus = prog?.completed ? 'completed' : prog && prog.stage !== 'overview' ? 'in-progress' : le.status;
-    return { event: ev, status: resolvedStatus, progress: le.progress, dueDate: le.dueDate, completedDate: le.completedDate, proficiency: le.proficiency };
-  }).filter(Boolean) as { event: LearningEventType; status: 'assigned' | 'in-progress' | 'completed'; progress?: number; dueDate?: string; completedDate?: string; proficiency?: string }[];
+    return { event: ev, status: resolvedStatus, progress: le.progress, dueDate: le.dueDate, completedDate: le.completedDate };
+  }).filter(Boolean) as { event: LearningEventType; status: 'assigned' | 'in-progress' | 'completed'; progress?: number; dueDate?: string; completedDate?: string }[];
 
   const tutorContext = learnerPage === 'event' && activeEvent
     ? `The learner is currently in the ${activeProgress?.stage ?? 'overview'} stage of FAIR data principles.`
     : undefined;
 
   return (
-    <div className="flex min-h-screen bg-slate-950">
-      {/* Sidebar — switches based on view */}
+    <div className="flex min-h-screen bg-slate-50">
       {view === 'admin' ? (
         <Sidebar currentPage={adminPage === 'create' ? 'create' : 'dashboard'} onNavigate={(p) => setAdminPage(p)} />
       ) : (
@@ -102,33 +97,30 @@ export default function App() {
       )}
 
       <main className="ml-64 flex-1 flex flex-col min-h-screen">
-        {/* Header */}
-        <header className="sticky top-0 z-10 bg-slate-950/90 backdrop-blur border-b border-slate-800 px-8 py-3.5 flex items-center justify-between">
-          {/* Breadcrumb */}
-          <nav className="flex items-center gap-1.5 text-xs text-slate-500">
-            <span className="text-slate-300 font-semibold">Tutor</span>
-            <span className="text-slate-700">/</span>
+        <header className="sticky top-0 z-10 bg-white border-b border-slate-200 px-8 py-3.5 flex items-center justify-between">
+          <nav className="flex items-center gap-1.5 text-xs text-slate-400">
+            <span className="text-slate-700 font-semibold">Tutor</span>
+            <span className="text-slate-300">/</span>
             {view === 'admin' ? (
               <>
-                <span className="text-slate-300 font-semibold">Admin</span>
-                {adminPage === 'create' && <><span className="text-slate-700">/</span><span className="text-blue-400 font-semibold">New Event</span></>}
-                {adminPage === 'detail' && selectedAdminEvent && <><span className="text-slate-700">/</span><span className="text-slate-300 font-semibold truncate max-w-xs">{selectedAdminEvent.title}</span></>}
+                <span className="text-slate-700 font-semibold">Admin</span>
+                {adminPage === 'create' && <><span className="text-slate-300">/</span><span className="text-blue-600 font-semibold">New Event</span></>}
+                {adminPage === 'detail' && selectedAdminEvent && <><span className="text-slate-300">/</span><span className="text-slate-700 font-semibold truncate max-w-xs">{selectedAdminEvent.title}</span></>}
               </>
             ) : (
               <>
-                <span className="text-teal-400 font-semibold">Learner</span>
-                {learnerPage === 'event' && activeEvent && <><span className="text-slate-700">/</span><span className="text-slate-300 font-semibold truncate max-w-xs">{activeEvent.capability.name}</span></>}
+                <span className="text-teal-600 font-semibold">Learner</span>
+                {learnerPage === 'event' && activeEvent && <><span className="text-slate-300">/</span><span className="text-slate-700 font-semibold truncate max-w-xs">{activeEvent.capability.name}</span></>}
               </>
             )}
           </nav>
 
           <div className="flex items-center gap-3">
-            {/* Admin / Learner toggle */}
-            <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5">
+            <div className="flex items-center bg-slate-100 border border-slate-200 rounded-lg p-0.5">
               <button
                 onClick={() => setView('admin')}
                 className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                  view === 'admin' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                  view === 'admin' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
                 Admin
@@ -136,21 +128,20 @@ export default function App() {
               <button
                 onClick={() => setView('learner')}
                 className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                  view === 'learner' ? 'bg-teal-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                  view === 'learner' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
                 Learner
               </button>
             </div>
 
-            <div className="flex items-center gap-1.5 bg-emerald-500/10 text-emerald-400 text-xs font-semibold px-3 py-1.5 rounded-full border border-emerald-500/20">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 text-xs font-semibold px-3 py-1.5 rounded-full border border-emerald-200">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               AI Active
             </div>
           </div>
         </header>
 
-        {/* Page content */}
         <div className="flex-1 px-8 py-8">
           {view === 'admin' && (
             <>
@@ -162,23 +153,15 @@ export default function App() {
 
           {view === 'learner' && (
             <>
-              {learnerPage === 'dashboard' && (
-                <LearnerDashboard events={learnerEventItems} onOpen={handleOpenLearnerEvent} />
-              )}
+              {learnerPage === 'dashboard' && <LearnerDashboard events={learnerEventItems} onOpen={handleOpenLearnerEvent} />}
               {learnerPage === 'event' && activeEvent && activeProgress && (
-                <LearningEvent
-                  event={activeEvent}
-                  progress={activeProgress}
-                  onProgress={handleUpdateProgress}
-                  onBack={() => setLearnerPage('dashboard')}
-                />
+                <LearningEvent event={activeEvent} progress={activeProgress} onProgress={handleUpdateProgress} onBack={() => setLearnerPage('dashboard')} />
               )}
             </>
           )}
         </div>
       </main>
 
-      {/* Tutor chat — only in learner view */}
       {view === 'learner' && <TutorChat contextHint={tutorContext} />}
     </div>
   );

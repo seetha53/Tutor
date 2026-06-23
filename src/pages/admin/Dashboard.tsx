@@ -8,16 +8,16 @@ interface DashboardProps {
 }
 
 const statusConfig = {
-  Active: { label: 'Active', dot: 'bg-emerald-400', text: 'text-emerald-400', bg: 'bg-emerald-400/10 border border-emerald-400/20' },
-  Completed: { label: 'Completed', dot: 'bg-blue-400', text: 'text-blue-400', bg: 'bg-blue-400/10 border border-blue-400/20' },
-  Draft: { label: 'Draft', dot: 'bg-slate-400', text: 'text-slate-400', bg: 'bg-slate-400/10 border border-slate-400/20' },
+  Active: { label: 'Active', dot: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50 border border-emerald-200' },
+  Completed: { label: 'Completed', dot: 'bg-blue-500', text: 'text-blue-700', bg: 'bg-blue-50 border border-blue-200' },
+  Draft: { label: 'Draft', dot: 'bg-slate-400', text: 'text-slate-600', bg: 'bg-slate-100 border border-slate-200' },
 };
 
 const personaColors: Record<string, string> = {
-  L1: 'bg-violet-500/20 text-violet-300 border border-violet-500/30',
-  L2: 'bg-blue-500/20 text-blue-300 border border-blue-500/30',
-  L3: 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30',
-  L4: 'bg-amber-500/20 text-amber-300 border border-amber-500/30',
+  L1: 'bg-violet-50 text-violet-700 border border-violet-200',
+  L2: 'bg-blue-50 text-blue-700 border border-blue-200',
+  L3: 'bg-cyan-50 text-cyan-700 border border-cyan-200',
+  L4: 'bg-amber-50 text-amber-700 border border-amber-200',
 };
 
 export default function Dashboard({ events, onCreateNew, onOpenEvent }: DashboardProps) {
@@ -27,46 +27,43 @@ export default function Dashboard({ events, onCreateNew, onOpenEvent }: Dashboar
 
   return (
     <div className="max-w-5xl mx-auto">
-      {/* Page header */}
       <div className="flex items-start justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-white mb-1">Learning Events</h1>
-          <p className="text-slate-400 text-sm">Manage and track all capability-based learning events</p>
+          <h1 className="text-2xl font-bold text-slate-900 mb-1">Learning Events</h1>
+          <p className="text-slate-500 text-sm">Manage and track all capability-based learning events</p>
         </div>
         <button
           onClick={onCreateNew}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors shadow-lg shadow-blue-900/30"
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors shadow-sm"
         >
           <Plus size={15} />
           New Learning Event
         </button>
       </div>
 
-      {/* Stats row */}
       <div className="grid grid-cols-4 gap-4 mb-8">
         {[
-          { label: 'Total Events', value: events.length, icon: Zap, color: 'text-blue-400' },
-          { label: 'Active', value: active, icon: CheckCircle2, color: 'text-emerald-400' },
-          { label: 'Drafts', value: draft, icon: FileEdit, color: 'text-slate-400' },
-          { label: 'Learners Assigned', value: totalAssigned, icon: Users, color: 'text-violet-400' },
+          { label: 'Total Events', value: events.length, icon: Zap, color: 'text-blue-600' },
+          { label: 'Active', value: active, icon: CheckCircle2, color: 'text-emerald-600' },
+          { label: 'Drafts', value: draft, icon: FileEdit, color: 'text-slate-500' },
+          { label: 'Learners Assigned', value: totalAssigned, icon: Users, color: 'text-violet-600' },
         ].map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className="bg-slate-900 border border-slate-800 rounded-xl px-5 py-4">
+          <div key={label} className="bg-white border border-slate-200 rounded-xl px-5 py-4 shadow-sm">
             <div className={`${color} mb-2`}><Icon size={18} /></div>
-            <div className="text-2xl font-bold text-white mb-0.5">{value}</div>
+            <div className="text-2xl font-bold text-slate-900 mb-0.5">{value}</div>
             <div className="text-slate-500 text-xs font-medium">{label}</div>
           </div>
         ))}
       </div>
 
-      {/* Events list */}
       <div className="space-y-3">
         {events.length === 0 ? (
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-12 text-center">
-            <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-4">
-              <Plus size={20} className="text-slate-500" />
+          <div className="bg-white border border-slate-200 rounded-xl p-12 text-center shadow-sm">
+            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
+              <Plus size={20} className="text-slate-400" />
             </div>
-            <p className="text-slate-400 text-sm mb-3">No learning events yet</p>
-            <button onClick={onCreateNew} className="text-blue-400 text-sm font-medium hover:text-blue-300 transition-colors">
+            <p className="text-slate-500 text-sm mb-3">No learning events yet</p>
+            <button onClick={onCreateNew} className="text-blue-600 text-sm font-medium hover:text-blue-700 transition-colors">
               Create your first event →
             </button>
           </div>
@@ -77,7 +74,7 @@ export default function Dashboard({ events, onCreateNew, onOpenEvent }: Dashboar
               <button
                 key={event.id}
                 onClick={() => onOpenEvent(event.id)}
-                className="w-full bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl p-5 text-left transition-all group"
+                className="w-full bg-white border border-slate-200 hover:border-slate-300 hover:shadow-md rounded-xl p-5 text-left transition-all group shadow-sm"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
@@ -86,11 +83,11 @@ export default function Dashboard({ events, onCreateNew, onOpenEvent }: Dashboar
                         <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
                         {sc.label}
                       </span>
-                      <span className="text-slate-500 text-xs">{event.capability.domain}</span>
+                      <span className="text-slate-400 text-xs">{event.capability.domain}</span>
                     </div>
-                    <h3 className="text-white font-semibold text-sm mb-1 group-hover:text-blue-300 transition-colors">{event.title}</h3>
+                    <h3 className="text-slate-900 font-semibold text-sm mb-1 group-hover:text-blue-600 transition-colors">{event.title}</h3>
                     <p className="text-slate-500 text-xs line-clamp-1 mb-3">{event.context}</p>
-                    <div className="flex items-center gap-4 text-xs text-slate-500">
+                    <div className="flex items-center gap-4 text-xs text-slate-400">
                       <span className="flex items-center gap-1.5">
                         <Users size={12} />
                         {event.assignedCount} learners
@@ -106,7 +103,7 @@ export default function Dashboard({ events, onCreateNew, onOpenEvent }: Dashboar
                       </div>
                     </div>
                   </div>
-                  <ChevronRight size={16} className="text-slate-600 group-hover:text-slate-400 flex-shrink-0 mt-1 transition-colors" />
+                  <ChevronRight size={16} className="text-slate-300 group-hover:text-slate-500 flex-shrink-0 mt-1 transition-colors" />
                 </div>
               </button>
             );

@@ -1,8 +1,7 @@
 export type Persona = 'L1' | 'L2' | 'L3' | 'L4';
 export type EventStatus = 'Draft' | 'Active' | 'Completed';
-export type ProficiencyLevel = 'Beginner' | 'Competent' | 'Expert';
 export type LearningMode = 'Guided Reading' | 'Case Studies' | 'Worked Examples' | 'Interactive Q&A' | 'Knowledge Checks';
-export type LearnerStage = 'overview' | 'baseline' | 'proficiency' | 'customise' | 'learning' | 'practice' | 'summative' | 'complete';
+export type LearnerStage = 'overview' | 'baseline' | 'customise' | 'learning' | 'practice' | 'summative' | 'complete';
 
 export interface Capability {
   id: string;
@@ -53,8 +52,6 @@ export interface LearnerProgress {
   showingFormative: boolean;
   baselineAnswers: (number | null)[];
   baselineScore: number;
-  proficiencyLevel: ProficiencyLevel | null;
-  targetLevel: ProficiencyLevel | null;
   learningModes: LearningMode[];
   sessionLength: string;
   sessionsAvailable: string;
