@@ -52,7 +52,7 @@ export interface LearnerProgress {
   showingFormative: boolean;
   baselineAnswers: (number | null)[];
   baselineScore: number;
-  sessionPacing: '15' | '30';
+  sessionPacing: 'full' | '15' | '30';
   formativeAnswers: Record<number, number | null>;
   practiceStep: number;
   practiceAnswers: (number | null)[];

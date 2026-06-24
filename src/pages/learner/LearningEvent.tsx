@@ -305,11 +305,17 @@ function BaselineStage({ answers, onAnswer, onComplete }: {
 
 // ── Stage: Customise ─────────────────────────────────────────────────────────
 function CustomiseStage({ onConfirm }: {
-  onConfirm: (chunkMins: '15' | '30') => void;
+  onConfirm: (pacing: 'full' | '15' | '30') => void;
 }) {
-  const [chunk, setChunk] = useState<'15' | '30' | null>(null);
+  const [choice, setChoice] = useState<'full' | '15' | '30' | null>(null);
 
-  const options: { id: '15' | '30'; icon: typeof Coffee; title: string; desc: string }[] = [
+  const options: { id: 'full' | '15' | '30'; icon: typeof Coffee; title: string; desc: string }[] = [
+    {
+      id: 'full',
+      icon: Award,
+      title: 'Complete it in one go',
+      desc: 'Work through the full ~55 minutes uninterrupted — ideal when you have a clear block of time set aside.',
+    },
     {
       id: '15',
       icon: Coffee,
@@ -333,9 +339,9 @@ function CustomiseStage({ onConfirm }: {
         <div className="grid grid-cols-1 gap-3 mt-2">
           {options.map(o => {
             const Icon = o.icon;
-            const selected = chunk === o.id;
+            const selected = choice === o.id;
             return (
-              <button key={o.id} onClick={() => setChunk(o.id)}
+              <button key={o.id} onClick={() => setChoice(o.id)}
                 className={`w-full text-left rounded-xl border p-4 transition-all flex items-start gap-4 ${
                   selected
                     ? 'border-teal-400 bg-teal-50 ring-2 ring-teal-300 shadow-sm'
@@ -357,7 +363,7 @@ function CustomiseStage({ onConfirm }: {
         </div>
       </div>
 
-      <button onClick={() => chunk && onConfirm(chunk)} disabled={!chunk}
+      <button onClick={() => choice && onConfirm(choice)} disabled={!choice}
         className="w-full bg-teal-600 hover:bg-teal-700 disabled:opacity-40 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm">
         Start Learning <ArrowRight size={15} />
       </button>
@@ -958,7 +964,7 @@ export default function LearningEvent({ event, progress, onProgress, onBack }: P
   const [showNudge, setShowNudge] = useState(false);
   const nudgeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (progress.stage === 'learning') {
+    if (progress.stage === 'learning' && progress.sessionPacing !== 'full') {
       setShowNudge(false);
       const demoDelay = progress.sessionPacing === '15' ? 30_000 : 60_000;
       nudgeTimer.current = setTimeout(() => setShowNudge(true), demoDelay);
@@ -1035,7 +1041,7 @@ export default function LearningEvent({ event, progress, onProgress, onBack }: P
           <div className="mb-5 bg-teal-50 border border-teal-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <Coffee size={15} className="text-teal-600 flex-shrink-0" />
-              <p className="text-teal-800 text-sm">{LEARNER.name}, you've been at it for {progress.sessionPacing} minutes — a great moment to take a short break. Your progress is saved and you can continue right here whenever you're ready.</p>
+              <p className="text-teal-800 text-sm">{LEARNER.name}, you've been going for {progress.sessionPacing} minutes — a great moment for a short break. Your progress is saved and you can continue right here whenever you're ready.</p>
             </div>
             <button onClick={() => setShowNudge(false)} className="text-teal-400 hover:text-teal-600 flex-shrink-0 transition-colors">
               <X size={15} />
