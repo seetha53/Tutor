@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import {
-  ArrowLeft, ArrowRight, CheckCircle2, Target, BookOpen, Zap, Award,
+  ArrowLeft, ArrowRight, CheckCircle2, Target, BookOpen, Award,
   RotateCcw, Clock, AlertCircle, Eye, ClipboardList, Settings2,
   FlaskConical, FileCheck, Play, Pause, Film, Lightbulb, MessagesSquare,
-  Sparkles, ListChecks,
+  Sparkles, ListChecks, Headphones, X, Coffee,
 } from 'lucide-react';
-import type { LearningEvent as LearningEventType, LearnerProgress, LearningMode, MCQuestion } from '../../types';
+import type { LearningEvent as LearningEventType, LearnerProgress, MCQuestion } from '../../types';
 import { fairPrinciples, baselineQuestions, practiceScenario, summativeQuestions, getTutorResponse, type FairPrinciple } from '../../data/fairContent';
 import TutorChat from '../../components/TutorChat';
 
@@ -16,9 +16,6 @@ interface Props {
   onBack: () => void;
 }
 
-const MODES: LearningMode[] = ['Guided Reading', 'Case Studies', 'Worked Examples', 'Interactive Q&A with the Tutor', 'Video', 'Quizzes / Knowledge Checks'];
-const SESSION_LENGTHS = ['Under 15 minutes', '15–30 minutes', '30–60 minutes', '1 hour or more'];
-const SESSION_COUNTS = ['1–2 sessions', '3–4 sessions', '5–6 sessions', '7 or more'];
 const PASS_THRESHOLD = 0.75; // 75%
 const MAX_ATTEMPTS = 3;
 
@@ -290,57 +287,62 @@ function BaselineStage({ answers, onAnswer, onComplete }: {
 
 // ── Stage: Customise ─────────────────────────────────────────────────────────
 function CustomiseStage({ onConfirm }: {
-  onConfirm: (modes: LearningMode[], length: string, count: string) => void;
+  onConfirm: (pacing: 'single' | 'chunked') => void;
 }) {
-  const [modes, setModes] = useState<LearningMode[]>(['Guided Reading', 'Case Studies']);
-  const [length, setLength] = useState('15–30 minutes');
-  const [count, setCount] = useState('3–4 sessions');
-  const toggleMode = (m: LearningMode) => setModes(p => p.includes(m) ? p.filter(x => x !== m) : [...p, m]);
+  const [pacing, setPacing] = useState<'single' | 'chunked' | null>(null);
+
+  const options = [
+    {
+      id: 'single' as const,
+      icon: Award,
+      title: 'Complete it in one go',
+      desc: 'Work through the full ~55 minutes without interruption — ideal if you have a clear block of time set aside.',
+    },
+    {
+      id: 'chunked' as const,
+      icon: Coffee,
+      title: 'Break it into shorter chunks',
+      desc: 'Your Tutor will suggest natural pause points so you can step away and pick up exactly where you left off.',
+    },
+  ];
 
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-slate-900 font-bold text-lg mb-1">Personalise Your Learning</h2>
-        <p className="text-slate-500 text-sm">Tell the Tutor how you'd like to learn — your path adapts to these preferences.</p>
+        <h2 className="text-slate-900 font-bold text-lg mb-1">One question before you start</h2>
+        <p className="text-slate-500 text-sm">This helps us support you in the way that works best for you.</p>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-3 shadow-sm">
-        <h3 className="text-slate-900 font-semibold text-sm flex items-center gap-2"><BookOpen size={13} className="text-teal-600" /> Preferred Learning Modes</h3>
-        <p className="text-slate-400 text-xs">Select all that suit you.</p>
-        <div className="flex flex-wrap gap-2">
-          {MODES.map(m => (
-            <button key={m} onClick={() => toggleMode(m)} className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${
-              modes.includes(m) ? 'bg-teal-50 border-teal-300 text-teal-700' : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50'
-            }`}>{m}</button>
-          ))}
+      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-3">
+        <h3 className="text-slate-900 font-semibold text-sm">How are you planning to approach this course today?</h3>
+        <div className="grid grid-cols-1 gap-3 mt-2">
+          {options.map(o => {
+            const Icon = o.icon;
+            const selected = pacing === o.id;
+            return (
+              <button key={o.id} onClick={() => setPacing(o.id)}
+                className={`w-full text-left rounded-xl border p-4 transition-all flex items-start gap-4 ${
+                  selected
+                    ? 'border-teal-400 bg-teal-50 ring-2 ring-teal-300 shadow-sm'
+                    : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
+                }`}>
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${selected ? 'bg-teal-100 text-teal-600' : 'bg-slate-100 text-slate-500'}`}>
+                  <Icon size={18} />
+                </div>
+                <div>
+                  <p className={`text-sm font-semibold ${selected ? 'text-teal-800' : 'text-slate-800'}`}>{o.title}</p>
+                  <p className="text-slate-500 text-xs leading-relaxed mt-0.5">{o.desc}</p>
+                </div>
+                <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 ml-auto flex items-center justify-center ${selected ? 'border-teal-500 bg-teal-500' : 'border-slate-300'}`}>
+                  {selected && <div className="w-2 h-2 rounded-full bg-white" />}
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4 shadow-sm">
-        <h3 className="text-slate-900 font-semibold text-sm flex items-center gap-2"><Zap size={13} className="text-teal-600" /> Time Commitment</h3>
-        <div>
-          <p className="text-slate-500 text-xs font-medium mb-2">How long is a typical learning session for you?</p>
-          <div className="grid grid-cols-2 gap-2">
-            {SESSION_LENGTHS.map(l => (
-              <button key={l} onClick={() => setLength(l)} className={`py-2 px-3 rounded-lg border text-xs font-medium transition-all text-left ${
-                length === l ? 'border-teal-300 bg-teal-50 text-teal-700' : 'border-slate-200 text-slate-500 hover:border-slate-300'
-              }`}>{l}</button>
-            ))}
-          </div>
-        </div>
-        <div>
-          <p className="text-slate-500 text-xs font-medium mb-2">How many sessions can you dedicate to this topic?</p>
-          <div className="grid grid-cols-2 gap-2">
-            {SESSION_COUNTS.map(c => (
-              <button key={c} onClick={() => setCount(c)} className={`py-2 px-3 rounded-lg border text-xs font-medium transition-all text-left ${
-                count === c ? 'border-teal-300 bg-teal-50 text-teal-700' : 'border-slate-200 text-slate-500 hover:border-slate-300'
-              }`}>{c}</button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <button onClick={() => onConfirm(modes, length, count)} disabled={modes.length === 0}
+      <button onClick={() => pacing && onConfirm(pacing)} disabled={!pacing}
         className="w-full bg-teal-600 hover:bg-teal-700 disabled:opacity-40 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm">
         Start Learning <ArrowRight size={15} />
       </button>
@@ -439,6 +441,97 @@ function VideoBlock({ principle, color }: { principle: FairPrinciple; color: typ
             </div>
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Learning format: Podcast (simulated) ─────────────────────────────────────
+function PodcastBlock({ principle }: { principle: FairPrinciple }) {
+  const [playing, setPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const totalSec = 8 * 60 + 30; // 8:30 simulated
+
+  useEffect(() => {
+    if (playing) {
+      timer.current = setInterval(() => {
+        setProgress(p => {
+          if (p >= 100) { setPlaying(false); return 100; }
+          return p + 100 / (totalSec * 4);
+        });
+      }, 100);
+    }
+    return () => { if (timer.current) clearInterval(timer.current); };
+  }, [playing]);
+
+  const elapsed = Math.round((progress / 100) * totalSec);
+  const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+
+  // Split concept into three transcript segments + lab example
+  const c = principle.concept;
+  const third = Math.floor(c.length / 3);
+  const segments = [c.slice(0, third), c.slice(third, third * 2), c.slice(third * 2), principle.labExample];
+  const activeSegment = Math.min(segments.length - 1, Math.floor((progress / 100) * segments.length));
+
+  // Pseudo-random waveform heights seeded per principle
+  const bars = Array.from({ length: 48 }, (_, i) => 20 + Math.abs(Math.sin(i * 0.9 + principle.id.charCodeAt(0)) * 70));
+
+  return (
+    <div className="space-y-5">
+      {/* Audio player */}
+      <div className="bg-slate-900 rounded-xl p-5">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-12 h-12 rounded-lg bg-teal-600 flex items-center justify-center flex-shrink-0">
+            <Headphones size={20} className="text-white" />
+          </div>
+          <div>
+            <p className="text-white font-semibold text-sm">{principle.title} — FAIR Principles</p>
+            <p className="text-slate-400 text-xs">Episode {principle.id} · 8 min 30 sec · Simulated</p>
+          </div>
+        </div>
+
+        {/* Waveform */}
+        <div className="flex items-end gap-px h-10 mb-3">
+          {bars.map((h, i) => (
+            <div
+              key={i}
+              className={`flex-1 rounded-sm transition-colors ${(i / bars.length) * 100 < progress ? 'bg-teal-400' : 'bg-slate-700'}`}
+              style={{ height: `${h}%` }}
+            />
+          ))}
+        </div>
+
+        <div className="h-1 bg-slate-700 rounded-full mb-2 overflow-hidden">
+          <div className="h-full bg-teal-400 rounded-full transition-all" style={{ width: `${progress}%` }} />
+        </div>
+        <div className="flex justify-between text-xs text-slate-400 mb-4">
+          <span>{fmt(elapsed)}</span><span>8:30</span>
+        </div>
+
+        <button
+          onClick={() => setPlaying(p => !p)}
+          className="w-full py-2.5 bg-teal-600 hover:bg-teal-500 text-white rounded-lg flex items-center justify-center gap-2 text-sm font-medium transition-colors"
+        >
+          {playing ? <><Pause size={14} /> Pause</> : <><Play size={14} /> {progress > 0 ? 'Resume' : 'Play'}</>}
+        </button>
+      </div>
+
+      {/* Transcript */}
+      <div className="space-y-2">
+        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Transcript</p>
+        {segments.map((seg, i) => (
+          <p
+            key={i}
+            className={`text-sm leading-relaxed rounded-lg px-3 py-2 transition-all ${
+              i === activeSegment && progress > 0
+                ? 'text-slate-900 bg-teal-50 border border-teal-200'
+                : 'text-slate-400'
+            }`}
+          >
+            {seg}
+          </p>
+        ))}
       </div>
     </div>
   );
@@ -566,46 +659,29 @@ function QABlock({ principle }: { principle: FairPrinciple }) {
 }
 
 // ── Stage: Learning ──────────────────────────────────────────────────────────
-type FormatId = 'read' | 'video' | 'worked' | 'case' | 'qa';
+type MediaFormat = 'read' | 'video' | 'podcast';
 
-interface FormatAccent { ring: string; tint: string; iconWrap: string; text: string }
-
-const FORMAT_FOR_MODE: { mode: LearningMode; id: FormatId; label: string; desc: string; icon: typeof Eye; accent: FormatAccent }[] = [
-  { mode: 'Guided Reading',                 id: 'read',   label: 'Read',           desc: 'Concept, lab example & key takeaway', icon: BookOpen,       accent: { ring: 'ring-blue-400 border-blue-300',   tint: 'bg-blue-50',   iconWrap: 'bg-blue-100 text-blue-600',     text: 'text-blue-700' } },
-  { mode: 'Video',                          id: 'video',  label: 'Watch',          desc: 'A short guided video walkthrough',    icon: Film,           accent: { ring: 'ring-rose-400 border-rose-300',   tint: 'bg-rose-50',   iconWrap: 'bg-rose-100 text-rose-600',     text: 'text-rose-700' } },
-  { mode: 'Worked Examples',                id: 'worked', label: 'Worked Example', desc: 'Step by step, problem to fix',        icon: Lightbulb,      accent: { ring: 'ring-amber-400 border-amber-300', tint: 'bg-amber-50',  iconWrap: 'bg-amber-100 text-amber-600',   text: 'text-amber-700' } },
-  { mode: 'Case Studies',                   id: 'case',   label: 'Case Study',     desc: 'Decide what you’d do for real',       icon: FlaskConical,   accent: { ring: 'ring-cyan-400 border-cyan-300',   tint: 'bg-cyan-50',   iconWrap: 'bg-cyan-100 text-cyan-600',     text: 'text-cyan-700' } },
-  { mode: 'Interactive Q&A with the Tutor', id: 'qa',     label: 'Ask the Tutor',  desc: 'Get your questions answered live',    icon: MessagesSquare, accent: { ring: 'ring-teal-400 border-teal-300',   tint: 'bg-teal-50',   iconWrap: 'bg-teal-100 text-teal-600',     text: 'text-teal-700' } },
+const MEDIA_OPTIONS: { id: MediaFormat; label: string; icon: typeof BookOpen; desc: string }[] = [
+  { id: 'read',    label: 'Read',   icon: BookOpen,    desc: 'Text & examples' },
+  { id: 'video',   label: 'Watch',  icon: Film,        desc: 'Guided video' },
+  { id: 'podcast', label: 'Listen', icon: Headphones,  desc: 'Audio + transcript' },
 ];
 
-function LearningStage({ section, showingFormative, formativeAnswer, onFormativeAnswer, onNext, completedSections, modes }: {
+function LearningStage({ section, showingFormative, formativeAnswer, onFormativeAnswer, onNext, completedSections }: {
   section: number;
   showingFormative: boolean;
   formativeAnswer: number | null;
   onFormativeAnswer: (i: number) => void;
   onNext: () => void;
   completedSections: number;
-  modes: LearningMode[];
 }) {
   const principle = fairPrinciples[section];
   const color = pc[principle.id];
   const meta = PRINCIPLE_META[section];
+  const [media, setMedia] = useState<MediaFormat>('read');
 
-  // Which formats are available — always include Read, then any selected mode.
-  const formats = FORMAT_FOR_MODE.filter(f => f.id === 'read' || modes.includes(f.mode));
-  // No default winner — learner chooses how to engage. Single format auto-opens.
-  const [active, setActive] = useState<FormatId | null>(formats.length === 1 ? 'read' : null);
-  const [viewed, setViewed] = useState<Set<FormatId>>(new Set());
-  // Reset when we move to a new principle section.
-  useEffect(() => {
-    setActive(formats.length === 1 ? 'read' : null);
-    setViewed(new Set());
-  }, [section]);
-
-  const open = (id: FormatId) => {
-    setActive(id);
-    setViewed(prev => new Set(prev).add(id));
-  };
+  // Reset media format when moving to a new section
+  useEffect(() => { setMedia('read'); }, [section]);
 
   const totalMinutes = PRINCIPLE_META.reduce((s, p) => s + p.minutes, 0);
   const doneMinutes = PRINCIPLE_META.slice(0, completedSections).reduce((s, p) => s + p.minutes, 0);
@@ -661,59 +737,44 @@ function LearningStage({ section, showingFormative, formativeAnswer, onFormative
             </div>
           </div>
 
-          {/* Equal-weight format chooser — every selected mode is a first-class entry point */}
-          {formats.length > 1 && (
-            <div>
-              <p className="text-slate-700 text-sm font-semibold mb-1">Choose how you’d like to learn this</p>
-              <p className="text-slate-400 text-xs mb-3">Try as many formats as you like — they all cover the same principle.</p>
-              <div className="grid grid-cols-2 gap-2.5">
-                {formats.map(f => {
-                  const Icon = f.icon;
-                  const on = active === f.id;
-                  const done = viewed.has(f.id);
+          {/* Content + sidebar */}
+          <div className="flex gap-4 items-start">
+            {/* Main content */}
+            <div className="flex-1 min-w-0 bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+              {media === 'read'    && <ReadBlock principle={principle} color={color} />}
+              {media === 'video'   && <VideoBlock principle={principle} color={color} />}
+              {media === 'podcast' && <PodcastBlock principle={principle} />}
+            </div>
+
+            {/* Format sidebar */}
+            <div className="w-36 flex-shrink-0">
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2 px-1">Format</p>
+              <div className="space-y-1.5">
+                {MEDIA_OPTIONS.map(opt => {
+                  const Icon = opt.icon;
+                  const on = media === opt.id;
                   return (
                     <button
-                      key={f.id}
-                      onClick={() => open(f.id)}
-                      className={`relative text-left rounded-xl border p-3.5 transition-all ${
+                      key={opt.id}
+                      onClick={() => setMedia(opt.id)}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg border text-left transition-all ${
                         on
-                          ? `${f.accent.tint} ${f.accent.ring} ring-2 shadow-sm`
-                          : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-sm'
+                          ? 'bg-teal-50 border-teal-300 text-teal-700 shadow-sm'
+                          : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700'
                       }`}
                     >
-                      {done && !on && (
-                        <CheckCircle2 size={15} className="absolute top-2.5 right-2.5 text-teal-500" />
-                      )}
-                      <div className="flex items-center gap-3">
-                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${f.accent.iconWrap}`}>
-                          <Icon size={17} />
-                        </div>
-                        <div className="min-w-0">
-                          <p className={`text-sm font-semibold ${on ? f.accent.text : 'text-slate-800'}`}>{f.label}</p>
-                          <p className="text-slate-400 text-xs leading-snug">{f.desc}</p>
-                        </div>
+                      <Icon size={14} className="flex-shrink-0" />
+                      <div>
+                        <p className="text-xs font-semibold leading-none">{opt.label}</p>
+                        <p className="text-slate-400 text-xs leading-snug mt-0.5">{opt.desc}</p>
                       </div>
                     </button>
                   );
                 })}
               </div>
+              <p className="text-slate-300 text-xs mt-3 px-1 leading-relaxed">All formats cover the same content.</p>
             </div>
-          )}
-
-          {/* Active format content */}
-          {active ? (
-            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-              {active === 'read'   && <ReadBlock principle={principle} color={color} />}
-              {active === 'video'  && <VideoBlock principle={principle} color={color} />}
-              {active === 'worked' && <WorkedExampleBlock principle={principle} color={color} />}
-              {active === 'case'   && <CaseStudyBlock principle={principle} />}
-              {active === 'qa'     && <QABlock principle={principle} />}
-            </div>
-          ) : (
-            <div className="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-8 text-center">
-              <p className="text-slate-400 text-sm">Pick a format above to start learning <span className="font-semibold text-slate-500">{principle.title}</span>.</p>
-            </div>
-          )}
+          </div>
 
           <button onClick={onNext}
             className="w-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm">
@@ -985,6 +1046,16 @@ export default function LearningEvent({ event, progress, onProgress, onBack }: P
   const outcomes = event.outcomes.find(o => o.persona === 'L2')?.outcomes ?? event.outcomes[0]?.outcomes ?? [];
   const update = (partial: Partial<LearnerProgress>) => onProgress({ ...progress, ...partial });
 
+  // Nudge banner for chunked-pacing learners — fires after 30 s in the learning stage (demo interval)
+  const [showNudge, setShowNudge] = useState(false);
+  const nudgeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (progress.stage === 'learning' && progress.sessionPacing === 'chunked') {
+      nudgeTimer.current = setTimeout(() => setShowNudge(true), 30_000);
+    }
+    return () => { if (nudgeTimer.current) clearTimeout(nudgeTimer.current); };
+  }, [progress.stage, progress.currentSection, progress.sessionPacing]);
+
   const handleBaselineAnswer = (qi: number, ai: number) => {
     const next = [...progress.baselineAnswers]; next[qi] = ai;
     update({ baselineAnswers: next });
@@ -1049,6 +1120,19 @@ export default function LearningEvent({ event, progress, onProgress, onBack }: P
 
         <StageProgressBar current={progress.stage} />
 
+        {/* Chunked-pacing nudge */}
+        {showNudge && (
+          <div className="mb-5 bg-teal-50 border border-teal-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <Coffee size={15} className="text-teal-600 flex-shrink-0" />
+              <p className="text-teal-800 text-sm">You've been going for a while — this is a great moment to take a break. Your progress is saved and you can pick up right here when you're ready.</p>
+            </div>
+            <button onClick={() => setShowNudge(false)} className="text-teal-400 hover:text-teal-600 flex-shrink-0 transition-colors">
+              <X size={15} />
+            </button>
+          </div>
+        )}
+
         <div className="max-w-2xl mx-auto">
           {progress.stage === 'overview' && (
             <OverviewStage event={event} outcomes={outcomes} onStart={() => update({ stage: 'baseline' })} />
@@ -1064,7 +1148,7 @@ export default function LearningEvent({ event, progress, onProgress, onBack }: P
             />
           )}
           {progress.stage === 'customise' && (
-            <CustomiseStage onConfirm={(m, l, c) => update({ stage: 'learning', learningModes: m, sessionLength: l, sessionsAvailable: c })} />
+            <CustomiseStage onConfirm={(pacing) => update({ stage: 'learning', sessionPacing: pacing })} />
           )}
           {progress.stage === 'learning' && (
             <LearningStage
@@ -1074,7 +1158,6 @@ export default function LearningEvent({ event, progress, onProgress, onBack }: P
               onFormativeAnswer={handleFormativeAnswer}
               onNext={handleLearningNext}
               completedSections={progress.currentSection}
-              modes={progress.learningModes}
             />
           )}
           {progress.stage === 'practice' && (
@@ -1108,3 +1191,4 @@ export default function LearningEvent({ event, progress, onProgress, onBack }: P
     </div>
   );
 }
+
