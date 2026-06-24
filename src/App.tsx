@@ -26,7 +26,7 @@ function makeProgress(eventId: string): LearnerProgress {
     showingFormative: false,
     baselineAnswers: Array(baselineQuestions.length).fill(null),
     baselineScore: 0,
-    sessionPacing: 'single',
+    sessionPacing: '15',
     formativeAnswers: {},
     practiceStep: 0,
     practiceAnswers: [],

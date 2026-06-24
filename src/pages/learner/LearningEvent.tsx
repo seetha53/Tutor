@@ -3,7 +3,7 @@ import {
   ArrowLeft, ArrowRight, CheckCircle2, Target, BookOpen, Award,
   RotateCcw, Clock, AlertCircle, Eye, ClipboardList, Settings2,
   FlaskConical, FileCheck, Play, Pause, Film,
-  ListChecks, Headphones, X, Coffee,
+  ListChecks, Headphones, X, Coffee, GraduationCap,
 } from 'lucide-react';
 import type { LearningEvent as LearningEventType, LearnerProgress, MCQuestion } from '../../types';
 import { fairPrinciples, baselineQuestions, practiceScenario, summativeQuestions, type FairPrinciple } from '../../data/fairContent';
@@ -16,8 +16,23 @@ interface Props {
   onBack: () => void;
 }
 
-const PASS_THRESHOLD = 0.75; // 75%
+const PASS_THRESHOLD = 0.80; // 80%
 const MAX_ATTEMPTS = 3;
+
+// Learner persona — in a real app this would come from auth/profile
+const LEARNER = { name: 'Alex', fullName: 'Alex Lin', role: 'Scientist', team: 'Immunology' };
+
+// ── Tutor voice card ─────────────────────────────────────────────────────────
+function TutorVoice({ message }: { message: string }) {
+  return (
+    <div className="flex gap-3 items-start bg-teal-50 border border-teal-200 rounded-xl p-4">
+      <div className="w-8 h-8 rounded-full bg-teal-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+        <GraduationCap size={14} className="text-white" />
+      </div>
+      <p className="text-slate-700 text-sm leading-relaxed">{message}</p>
+    </div>
+  );
+}
 
 // ── Stage metadata ───────────────────────────────────────────────────────────
 const STAGES = [
@@ -176,6 +191,8 @@ function OverviewStage({ event, outcomes, onStart }: {
 }) {
   return (
     <div className="space-y-5">
+      <TutorVoice message={`Hi ${LEARNER.name}! I'm your Tutor for this session. As a ${LEARNER.role} in the ${LEARNER.team} team, understanding FAIR principles will directly shape how your research data is shared, cited, and built upon by others. Let's get you there.`} />
+
       <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
         <p className="text-teal-600 text-xs font-semibold uppercase tracking-widest mb-1">{event.capability.domain}</p>
         <h2 className="text-xl font-bold text-slate-900 mb-2">{event.capability.name}</h2>
@@ -207,7 +224,7 @@ function OverviewStage({ event, outcomes, onStart }: {
             { label: 'Personalise',          time: '~2 min',  desc: 'Set your learning modes and time commitment' },
             { label: 'Learn — F, A, I, R',  time: '~40 min', desc: '4 principles, each with a concept card, lab example, and knowledge check' },
             { label: 'Practice scenario',    time: '~5 min',  desc: 'Apply FAIR to a real cytokine dataset submission' },
-            { label: 'Final assessment',     time: '~5 min',  desc: '4 questions — pass at 75% or retry up to 3 times' },
+            { label: 'Final assessment',     time: '~5 min',  desc: '4 questions — pass at 80% or retry up to 3 times' },
           ].map(({ label, time, desc }) => (
             <div key={label} className="flex items-start gap-3 py-2 border-b border-slate-100 last:border-0">
               <span className="text-slate-400 text-xs w-14 flex-shrink-0 pt-0.5">{time}</span>
@@ -240,12 +257,13 @@ function BaselineStage({ answers, onAnswer, onComplete }: {
 
   return (
     <div className="space-y-6">
+      <TutorVoice message={`Before we dive in, ${LEARNER.name}, I have a few quick questions to understand where you're starting from. There are no right or wrong answers — just go with your instinct.`} />
+
       <div>
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-slate-900 font-bold text-lg">Baseline Assessment</h2>
           <span className="text-slate-500 text-sm">{current + 1} / {baselineQuestions.length}</span>
         </div>
-        <p className="text-slate-500 text-sm mb-4">These questions help personalise your learning — just pick the answer that feels most right.</p>
         <div className="flex gap-1.5 mb-2">
           {baselineQuestions.map((_, i) => (
             <div key={i} className={`flex-1 h-1.5 rounded-full transition-all ${
@@ -287,40 +305,37 @@ function BaselineStage({ answers, onAnswer, onComplete }: {
 
 // ── Stage: Customise ─────────────────────────────────────────────────────────
 function CustomiseStage({ onConfirm }: {
-  onConfirm: (pacing: 'single' | 'chunked') => void;
+  onConfirm: (chunkMins: '15' | '30') => void;
 }) {
-  const [pacing, setPacing] = useState<'single' | 'chunked' | null>(null);
+  const [chunk, setChunk] = useState<'15' | '30' | null>(null);
 
-  const options = [
+  const options: { id: '15' | '30'; icon: typeof Coffee; title: string; desc: string }[] = [
     {
-      id: 'single' as const,
-      icon: Award,
-      title: 'Complete it in one go',
-      desc: 'Work through the full ~55 minutes without interruption — ideal if you have a clear block of time set aside.',
+      id: '15',
+      icon: Coffee,
+      title: '15-minute sessions',
+      desc: 'Quick, focused bursts — great if your day is fragmented or you want to learn between other tasks.',
     },
     {
-      id: 'chunked' as const,
-      icon: Coffee,
-      title: 'Break it into shorter chunks',
-      desc: 'Your Tutor will suggest natural pause points so you can step away and pick up exactly where you left off.',
+      id: '30',
+      icon: Clock,
+      title: '30-minute sessions',
+      desc: 'A deeper dive each time — better for getting into a flow and covering a full FAIR principle in one go.',
     },
   ];
 
   return (
     <div className="space-y-5">
-      <div>
-        <h2 className="text-slate-900 font-bold text-lg mb-1">One question before you start</h2>
-        <p className="text-slate-500 text-sm">This helps us support you in the way that works best for you.</p>
-      </div>
+      <TutorVoice message={`Thanks for that, ${LEARNER.name}! I've tailored your path based on your answers. One last thing — how long would you like each learning session to be? I'll remind you at the right moment to take a break.`} />
 
       <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-3">
-        <h3 className="text-slate-900 font-semibold text-sm">How are you planning to approach this course today?</h3>
+        <h3 className="text-slate-900 font-semibold text-sm">How long would you like each learning session to be?</h3>
         <div className="grid grid-cols-1 gap-3 mt-2">
           {options.map(o => {
             const Icon = o.icon;
-            const selected = pacing === o.id;
+            const selected = chunk === o.id;
             return (
-              <button key={o.id} onClick={() => setPacing(o.id)}
+              <button key={o.id} onClick={() => setChunk(o.id)}
                 className={`w-full text-left rounded-xl border p-4 transition-all flex items-start gap-4 ${
                   selected
                     ? 'border-teal-400 bg-teal-50 ring-2 ring-teal-300 shadow-sm'
@@ -342,7 +357,7 @@ function CustomiseStage({ onConfirm }: {
         </div>
       </div>
 
-      <button onClick={() => pacing && onConfirm(pacing)} disabled={!pacing}
+      <button onClick={() => chunk && onConfirm(chunk)} disabled={!chunk}
         className="w-full bg-teal-600 hover:bg-teal-700 disabled:opacity-40 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm">
         Start Learning <ArrowRight size={15} />
       </button>
@@ -605,6 +620,13 @@ function LearningStage({ section, showingFormative, formativeAnswer, onFormative
 
       {!showingFormative ? (
         <>
+          <TutorVoice message={
+            section === 0 ? `Let's start with the first principle, ${LEARNER.name}. As someone working with immunology datasets, Findability is where most data problems begin — you'll see why shortly.`
+            : section === 1 ? `Good work so far, ${LEARNER.name}. Next up is Accessibility — this is especially relevant when sharing assay data across collaborating labs.`
+            : section === 2 ? `You're making great progress. Interoperability can feel abstract, but for ${LEARNER.team} workflows it has very practical implications — keep an eye out for the lab example.`
+            : `Last one, ${LEARNER.name}! Reusability ties everything together — it's the principle that determines whether your data has lasting value beyond the original study.`
+          } />
+
           {/* Principle header */}
           <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
             <span className={`inline-block text-xs font-bold px-2 py-0.5 rounded border mb-3 ${color.badge}`}>{principle.id} — {principle.title}</span>
@@ -695,6 +717,7 @@ function PracticeStage({ practiceStep, practiceAnswers, onAnswer, onNext, onComp
 
   return (
     <div className="space-y-5">
+      <TutorVoice message={`Excellent work making it through all four principles, ${LEARNER.name}! Now let's see how you apply them together. This scenario is based on a real situation your ${LEARNER.team} team might face.`} />
       <div>
         <h2 className="text-slate-900 font-bold text-lg mb-1">Practice Scenario</h2>
         <p className="text-slate-500 text-sm mb-4">{practiceScenario.setup}</p>
@@ -754,6 +777,14 @@ function SummativeStage({ answers, attempts, onAnswer, onSubmit, onRetake }: {
       <div className="space-y-5">
         <h2 className="text-slate-900 font-bold text-lg">Assessment Result</h2>
 
+        <TutorVoice message={
+          passed
+            ? `Well done, ${LEARNER.name}! You've passed with ${pct}% — that's a strong result. Your understanding of FAIR principles is solid.`
+            : attemptsLeft > 0
+              ? `Not quite, ${LEARNER.name} — but you have ${attemptsLeft} more attempt${attemptsLeft > 1 ? 's' : ''}. Take a moment to review the questions below and try again when you're ready.`
+              : `You've given it your best shot, ${LEARNER.name}. Revisit the learning sections at your own pace and come back when you feel ready.`
+        } />
+
         <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm text-center space-y-4">
           <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto ${passed ? 'bg-emerald-50 border-2 border-emerald-400' : 'bg-amber-50 border-2 border-amber-400'}`}>
             {passed ? <CheckCircle2 size={28} className="text-emerald-600" /> : <AlertCircle size={28} className="text-amber-600" />}
@@ -762,13 +793,12 @@ function SummativeStage({ answers, attempts, onAnswer, onSubmit, onRetake }: {
             <p className={`text-2xl font-bold ${passed ? 'text-emerald-700' : 'text-amber-700'}`}>{pct}%</p>
             <p className="text-slate-500 text-sm">{score} out of {summativeQuestions.length} correct</p>
             <p className={`text-sm font-semibold mt-1 ${passed ? 'text-emerald-600' : 'text-amber-600'}`}>
-              {passed ? 'Passed — well done!' : `Not yet — ${Math.ceil(PASS_THRESHOLD * summativeQuestions.length)} correct answers needed to pass`}
+              {passed ? 'Passed' : 'Not passed'}
             </p>
           </div>
           <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden mx-8">
             <div className={`h-full rounded-full transition-all ${passed ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: `${pct}%` }} />
           </div>
-          {/* Pass threshold marker */}
           <p className="text-slate-400 text-xs">Pass threshold: {Math.round(PASS_THRESHOLD * 100)}%</p>
         </div>
 
@@ -796,19 +826,15 @@ function SummativeStage({ answers, attempts, onAnswer, onSubmit, onRetake }: {
           </button>
         ) : attempts < MAX_ATTEMPTS - 1 ? (
           <div className="space-y-3">
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
-              <AlertCircle size={15} className="text-amber-600 flex-shrink-0 mt-0.5" />
-              <p className="text-amber-700 text-sm">You have <strong>{attemptsLeft} attempt{attemptsLeft > 1 ? 's' : ''}</strong> remaining. Review the questions above and try again.</p>
-            </div>
             <button onClick={onRetake}
               className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm">
-              <RotateCcw size={15} /> Retake Assessment
+              <RotateCcw size={15} /> Try again
             </button>
           </div>
         ) : (
           <div className="space-y-3">
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-              <p className="text-slate-600 text-sm">You've used all {MAX_ATTEMPTS} attempts. Speak with your manager or revisit the learning sections before trying again.</p>
+              <p className="text-slate-600 text-sm">Revisit the learning sections when you're ready and speak with your manager if you'd like support.</p>
             </div>
             <button onClick={() => onSubmit(score)}
               className="w-full bg-slate-600 hover:bg-slate-700 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm">
@@ -879,7 +905,7 @@ function CompleteStage({ score, total, outcomes, onBack }: {
         <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 ${passed ? 'bg-teal-50 border-2 border-teal-400' : 'bg-slate-100 border-2 border-slate-300'}`}>
           <Award size={36} className={passed ? 'text-teal-600' : 'text-slate-500'} />
         </div>
-        <h2 className="text-slate-900 font-bold text-2xl mb-1">Learning Complete</h2>
+        <h2 className="text-slate-900 font-bold text-2xl mb-1">Well done, {LEARNER.name}!</h2>
         <p className="text-slate-500 text-sm">Final score: {score}/{total} — {pct}%</p>
       </div>
 
@@ -893,10 +919,13 @@ function CompleteStage({ score, total, outcomes, onBack }: {
       </div>
 
       <div className="bg-white border border-slate-200 rounded-xl p-6 text-left shadow-sm">
-        <h3 className="text-slate-900 font-semibold text-sm mb-3">Tutor Feedback</h3>
-        {pct >= 75 && <p className="text-slate-700 text-sm leading-relaxed">Excellent work. You've demonstrated a strong, independent command of FAIR principles and are well-placed to apply them consistently and support colleagues.</p>}
-        {pct >= 50 && pct < 75 && <p className="text-slate-700 text-sm leading-relaxed">Good progress. You have a working understanding of FAIR. Revisiting interoperability and long-term accessibility in practice will help consolidate further.</p>}
-        {pct < 50 && <p className="text-slate-700 text-sm leading-relaxed">You've been introduced to all four FAIR principles. Revisiting the learning sections and practice scenario will help — don't hesitate to ask your Tutor for a recap on any principle.</p>}
+        <TutorVoice message={
+          pct >= 80
+            ? `Brilliant work, ${LEARNER.name}. You've shown a strong command of all four FAIR principles. As a ${LEARNER.role} in ${LEARNER.team}, you're now well placed to apply these consistently and help colleagues do the same.`
+            : pct >= 50
+              ? `Good effort, ${LEARNER.name}. You have a solid working understanding of FAIR. Spending a little more time on interoperability and accessibility in your day-to-day ${LEARNER.team} workflows will help it click fully.`
+              : `You've covered a lot of ground today, ${LEARNER.name}. Take your time revisiting the learning sections — the concepts will solidify with practice. I'm here whenever you want to go over any principle again.`
+        } />
       </div>
 
       <div className="bg-white border border-slate-200 rounded-xl p-6 text-left shadow-sm">
@@ -925,12 +954,14 @@ export default function LearningEvent({ event, progress, onProgress, onBack }: P
   const outcomes = event.outcomes.find(o => o.persona === 'L2')?.outcomes ?? event.outcomes[0]?.outcomes ?? [];
   const update = (partial: Partial<LearnerProgress>) => onProgress({ ...progress, ...partial });
 
-  // Nudge banner for chunked-pacing learners — fires after 30 s in the learning stage (demo interval)
+  // Nudge banner — fires after the learner's chosen chunk interval (30s demo = 15 min, 60s demo = 30 min)
   const [showNudge, setShowNudge] = useState(false);
   const nudgeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (progress.stage === 'learning' && progress.sessionPacing === 'chunked') {
-      nudgeTimer.current = setTimeout(() => setShowNudge(true), 30_000);
+    if (progress.stage === 'learning') {
+      setShowNudge(false);
+      const demoDelay = progress.sessionPacing === '15' ? 30_000 : 60_000;
+      nudgeTimer.current = setTimeout(() => setShowNudge(true), demoDelay);
     }
     return () => { if (nudgeTimer.current) clearTimeout(nudgeTimer.current); };
   }, [progress.stage, progress.currentSection, progress.sessionPacing]);
@@ -1004,7 +1035,7 @@ export default function LearningEvent({ event, progress, onProgress, onBack }: P
           <div className="mb-5 bg-teal-50 border border-teal-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <Coffee size={15} className="text-teal-600 flex-shrink-0" />
-              <p className="text-teal-800 text-sm">You've been going for a while — this is a great moment to take a break. Your progress is saved and you can pick up right here when you're ready.</p>
+              <p className="text-teal-800 text-sm">{LEARNER.name}, you've been at it for {progress.sessionPacing} minutes — a great moment to take a short break. Your progress is saved and you can continue right here whenever you're ready.</p>
             </div>
             <button onClick={() => setShowNudge(false)} className="text-teal-400 hover:text-teal-600 flex-shrink-0 transition-colors">
               <X size={15} />
