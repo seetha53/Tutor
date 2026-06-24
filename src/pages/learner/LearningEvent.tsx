@@ -2,11 +2,11 @@
 import {
   ArrowLeft, ArrowRight, CheckCircle2, Target, BookOpen, Award,
   RotateCcw, Clock, AlertCircle, Eye, ClipboardList, Settings2,
-  FlaskConical, FileCheck, Play, Pause, Film, Lightbulb, MessagesSquare,
-  Sparkles, ListChecks, Headphones, X, Coffee,
+  FlaskConical, FileCheck, Play, Pause, Film,
+  ListChecks, Headphones, X, Coffee,
 } from 'lucide-react';
 import type { LearningEvent as LearningEventType, LearnerProgress, MCQuestion } from '../../types';
-import { fairPrinciples, baselineQuestions, practiceScenario, summativeQuestions, getTutorResponse, type FairPrinciple } from '../../data/fairContent';
+import { fairPrinciples, baselineQuestions, practiceScenario, summativeQuestions, type FairPrinciple } from '../../data/fairContent';
 import TutorChat from '../../components/TutorChat';
 
 interface Props {
@@ -531,127 +531,6 @@ function PodcastBlock({ principle }: { principle: FairPrinciple }) {
           >
             {seg}
           </p>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── Learning format: Worked Example (progressive reveal) ─────────────────────
-function WorkedExampleBlock({ principle, color }: { principle: FairPrinciple; color: typeof pc[string] }) {
-  const { workedExample: we } = principle;
-  const [revealed, setRevealed] = useState(0); // number of steps revealed
-  const allRevealed = revealed >= we.steps.length;
-
-  return (
-    <div className="space-y-4">
-      <h4 className="text-slate-900 font-semibold text-sm flex items-center gap-2"><Lightbulb size={14} className="text-amber-500" /> {we.title}</h4>
-
-      {/* Before */}
-      <div className="border border-red-200 bg-red-50 rounded-lg p-3">
-        <p className="text-red-700 text-xs font-semibold uppercase tracking-wide mb-1">Starting point</p>
-        <p className="text-slate-700 text-sm font-mono leading-relaxed">{we.before}</p>
-      </div>
-
-      {/* Steps revealed progressively */}
-      <div className="space-y-2">
-        {we.steps.slice(0, revealed).map((s, i) => (
-          <div key={i} className="flex items-start gap-3 border border-slate-200 bg-white rounded-lg p-3">
-            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${color.badge} border`}>{i + 1}</span>
-            <div>
-              <p className="text-slate-900 text-sm font-medium">{s.label}</p>
-              <p className="text-slate-600 text-sm mt-0.5 leading-relaxed">{s.detail}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {!allRevealed ? (
-        <button onClick={() => setRevealed(r => r + 1)}
-          className="w-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-sm font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2">
-          {revealed === 0 ? 'Walk me through it' : 'Reveal next step'} <ArrowRight size={13} />
-        </button>
-      ) : (
-        <div className="border border-emerald-200 bg-emerald-50 rounded-lg p-3">
-          <p className="text-emerald-700 text-xs font-semibold uppercase tracking-wide mb-1">Result</p>
-          <p className="text-slate-700 text-sm leading-relaxed">{we.after}</p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Learning format: Case Study ──────────────────────────────────────────────
-function CaseStudyBlock({ principle }: { principle: FairPrinciple }) {
-  const { caseStudy: cs } = principle;
-  const [showExpert, setShowExpert] = useState(false);
-
-  return (
-    <div className="space-y-4">
-      <h4 className="text-slate-900 font-semibold text-sm flex items-center gap-2"><FlaskConical size={14} className="text-cyan-600" /> {cs.title}</h4>
-      <p className="text-slate-700 text-sm leading-relaxed">{cs.narrative}</p>
-
-      <div className="border-l-2 border-teal-400 bg-teal-50 rounded-r-lg p-3">
-        <p className="text-teal-700 text-xs font-semibold uppercase tracking-wide mb-1">Your call</p>
-        <p className="text-slate-800 text-sm font-medium">{cs.question}</p>
-      </div>
-
-      {!showExpert ? (
-        <button onClick={() => setShowExpert(true)}
-          className="w-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-sm font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2">
-          <Eye size={13} /> Reveal the expert view
-        </button>
-      ) : (
-        <div className="border border-slate-200 bg-white rounded-lg p-3">
-          <p className="text-slate-500 text-xs font-semibold uppercase tracking-wide mb-1">Expert view</p>
-          <p className="text-slate-700 text-sm leading-relaxed">{cs.expertView}</p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Learning format: Interactive Q&A ─────────────────────────────────────────
-function QABlock({ principle }: { principle: FairPrinciple }) {
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-
-  const ask = (q: string) => {
-    if (answers[q]) return;
-    setAnswers(prev => ({ ...prev, [q]: '...' }));
-    setTimeout(() => setAnswers(prev => ({ ...prev, [q]: getTutorResponse(q) })), 500);
-  };
-
-  return (
-    <div className="space-y-3">
-      <p className="text-slate-600 text-sm flex items-center gap-2"><MessagesSquare size={14} className="text-teal-600" /> Tap a question to ask your Tutor — or type your own in the box below.</p>
-      <div className="space-y-2">
-        {principle.qaPrompts.map(q => (
-          <div key={q}>
-            <button
-              onClick={() => ask(q)}
-              disabled={!!answers[q]}
-              className="w-full text-left px-3 py-2.5 rounded-lg border border-slate-200 bg-white hover:border-teal-300 hover:bg-teal-50 disabled:hover:bg-white disabled:hover:border-slate-200 text-slate-700 text-sm transition-all flex items-center gap-2"
-            >
-              <MessagesSquare size={13} className="text-teal-500 flex-shrink-0" />
-              {q}
-            </button>
-            {answers[q] && (
-              <div className="flex gap-2 mt-2 ml-3">
-                <div className="w-5 h-5 rounded-full bg-teal-600 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Sparkles size={10} className="text-white" />
-                </div>
-                <div className="bg-slate-100 text-slate-700 text-xs leading-relaxed px-3 py-2 rounded-xl rounded-tl-sm">
-                  {answers[q] === '...'
-                    ? <span className="flex gap-1 items-center py-1">
-                        <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                      </span>
-                    : answers[q]}
-                </div>
-              </div>
-            )}
-          </div>
         ))}
       </div>
     </div>
